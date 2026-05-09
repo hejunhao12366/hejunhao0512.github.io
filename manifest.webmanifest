@@ -1,6 +1,6 @@
 {
-  "name": "手机记账",
-  "short_name": "记账",
+  "name": "理财",
+  "short_name": "理财",
   "description": "计算白条花呗总欠、本月还款、生活费余额和每天可用余额。",
   "start_url": "./index.html",
   "scope": "./",

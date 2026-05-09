@@ -82,20 +82,20 @@ textarea {
   letter-spacing: 0;
 }
 
-.save-status {
-  min-width: 64px;
+.quick-jump {
+  max-width: 82px;
+  min-height: 36px;
   padding: 7px 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgba(20, 23, 32, 0.8);
-  color: var(--muted);
+  background: linear-gradient(135deg, rgba(123, 220, 197, 0.95), rgba(94, 207, 179, 0.95));
+  color: #07100d;
   text-align: center;
   font-size: 13px;
-}
-
-.save-status.saved {
-  color: var(--mint);
-  border-color: rgba(97, 217, 189, 0.35);
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .time-text {
@@ -380,6 +380,7 @@ h2 {
   color: #e6e6e9;
   text-align: center;
   font-size: 16px;
+  cursor: text;
 }
 
 .control-panel {
@@ -456,6 +457,11 @@ textarea {
   color: #0b0b0b;
   background: linear-gradient(135deg, #7bdcc5, #5ecfb3);
   font-weight: 800;
+}
+
+.danger-button {
+  color: var(--red);
+  border-color: rgba(255, 77, 122, 0.35);
 }
 
 .record-save-button {

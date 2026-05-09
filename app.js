@@ -15,13 +15,18 @@ const sampleState = {
   livingFee: 1500,
   installmentAmount: 590.76,
   installmentMonths: 3,
+  installmentNote: "",
   balances: {
     alipay: 321.86,
     wechat: 263.64,
     bank: 0,
     other: 0,
   },
-  daysUntilLivingFee: 12,
+  paydayDay: 12,
+  quickJump: {
+    label: "支付宝",
+    url: "alipays://",
+  },
   notes: [
     { id: createId(), date: "2026-04-24", text: "321.86 + 263.64 = 585.5，585/12 = 48.75" },
     { id: createId(), date: "2026-04-24", text: "省 300 -> 285/12 = 23.75" },
@@ -92,13 +97,18 @@ function normalizeState(nextState) {
     livingFee: Number(nextState.livingFee || 0),
     installmentAmount: Number(nextState.installmentAmount || 0),
     installmentMonths: Math.max(1, Number(nextState.installmentMonths || 1)),
+    installmentNote: String(nextState.installmentNote || ""),
     balances: {
       alipay: Number(nextState.balances?.alipay || 0),
       wechat: Number(nextState.balances?.wechat || 0),
       bank: Number(nextState.balances?.bank || 0),
       other: Number(nextState.balances?.other || 0),
     },
-    daysUntilLivingFee: Math.max(1, Number(nextState.daysUntilLivingFee || 1)),
+    paydayDay: clampPayday(nextState.paydayDay || nextState.daysUntilLivingFee || 1),
+    quickJump: {
+      label: String(nextState.quickJump?.label || "支付宝"),
+      url: String(nextState.quickJump?.url || "alipays://"),
+    },
     notes: Array.isArray(nextState.notes) ? nextState.notes : [],
     dailyRecords: Array.isArray(nextState.dailyRecords) ? nextState.dailyRecords : [],
   };
@@ -106,17 +116,7 @@ function normalizeState(nextState) {
 
 function saveState() {
   localStorage.setItem(storeKey, JSON.stringify(state));
-  showSaved();
   updateHistoryButtons();
-}
-
-function showSaved() {
-  const status = $("#saveStatus");
-  if (!status) return;
-  status.textContent = "已保存";
-  status.classList.add("saved");
-  window.clearTimeout(showSaved.timer);
-  showSaved.timer = window.setTimeout(() => status.classList.remove("saved"), 900);
 }
 
 function renderClock() {
@@ -134,6 +134,7 @@ function renderClock() {
 
 function renderAll() {
   renderClock();
+  renderQuickJump();
   renderDashboard();
   renderForms();
   renderNotes();
@@ -170,17 +171,42 @@ function renderMonth() {
   $("#normalLeftText").textContent = money(state.livingFee - normalRepay);
   $("#splitRepayText").textContent = money(splitRepay);
   $("#splitLeftText").textContent = money(state.livingFee - splitRepay);
-  $("#installmentNote").textContent = `分期：${money(state.installmentAmount)} / ${state.installmentMonths} = ${money(installmentPerMonth)}，突发情况时用`;
+  $("#installmentNote").textContent = state.installmentNote || `分期：${money(state.installmentAmount)} / ${state.installmentMonths} = ${money(installmentPerMonth)}，突发情况时用`;
 }
 
 function renderDaily() {
   const balanceItems = getBalanceItems();
   const totalBalance = getTotalBalance();
+  const days = getDaysUntilLivingFee();
+  const divisor = Math.max(1, days);
 
   renderBalanceCards(balanceItems);
   $("#totalBalanceText").textContent = money(totalBalance);
-  renderEditableText("#daysText", state.daysUntilLivingFee, "daysUntilLivingFee", true);
-  $("#dailyCanUseText").textContent = `${money(totalBalance)} / ${state.daysUntilLivingFee} = ${money(totalBalance / state.daysUntilLivingFee)}`;
+  $("#daysText").textContent = days;
+  $("#dailyCanUseText").textContent = `${money(totalBalance)} / ${divisor} = ${money(totalBalance / divisor)}`;
+}
+
+function renderQuickJump() {
+  const button = $("#quickJumpButton");
+  if (!button) return;
+  button.textContent = state.quickJump.label || "快捷";
+}
+
+function getDaysUntilLivingFee() {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const payday = getPaydayDate(now.getFullYear(), now.getMonth(), state.paydayDay);
+  const target = payday >= today ? payday : getPaydayDate(now.getFullYear(), now.getMonth() + 1, state.paydayDay);
+  return Math.max(0, Math.round((target - today) / 86_400_000));
+}
+
+function getPaydayDate(year, month, day) {
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  return new Date(year, month, Math.min(clampPayday(day), lastDay));
+}
+
+function clampPayday(value) {
+  return Math.min(31, Math.max(1, Math.round(Number(value || 1))));
 }
 
 function renderBalanceCards(items) {
@@ -262,17 +288,20 @@ function renderForms() {
   $("#livingFeeInput").value = state.livingFee;
   $("#installmentAmountInput").value = state.installmentAmount;
   $("#installmentMonthsInput").value = state.installmentMonths;
+  $("#installmentNoteInput").value = state.installmentNote;
 
   $("#alipayInput").value = state.balances.alipay;
   $("#wechatInput").value = state.balances.wechat;
   $("#bankInput").value = state.balances.bank;
   $("#otherBalanceInput").value = state.balances.other;
-  $("#daysInput").value = state.daysUntilLivingFee;
+  $("#paydayDayInput").value = state.paydayDay;
+  $("#quickJumpLabelInput").value = state.quickJump.label;
+  $("#quickJumpUrlInput").value = state.quickJump.url;
   $("#noteDateInput").value ||= new Date().toISOString().slice(0, 10);
 }
 
-function syncDebtForm() {
-  rememberState();
+function syncDebtForm({ remember = true } = {}) {
+  if (remember) rememberState();
   state.debts.baitiao = Number($("#baitiaoDebtInput").value || 0);
   state.debts.huabei = Number($("#huabeiDebtInput").value || 0);
   state.monthlyRepay.baitiao = Number($("#baitiaoRepayInput").value || 0);
@@ -280,15 +309,22 @@ function syncDebtForm() {
   state.livingFee = Number($("#livingFeeInput").value || 0);
   state.installmentAmount = Number($("#installmentAmountInput").value || 0);
   state.installmentMonths = Math.max(1, Number($("#installmentMonthsInput").value || 1));
+  state.installmentNote = $("#installmentNoteInput").value.trim();
 }
 
-function syncDailyForm() {
-  rememberState();
+function syncDailyForm({ remember = true } = {}) {
+  if (remember) rememberState();
   state.balances.alipay = Number($("#alipayInput").value || 0);
   state.balances.wechat = Number($("#wechatInput").value || 0);
   state.balances.bank = Number($("#bankInput").value || 0);
   state.balances.other = Number($("#otherBalanceInput").value || 0);
-  state.daysUntilLivingFee = Math.max(1, Number($("#daysInput").value || 1));
+  state.paydayDay = clampPayday($("#paydayDayInput").value);
+}
+
+function syncQuickJumpForm({ remember = true } = {}) {
+  if (remember) rememberState();
+  state.quickJump.label = $("#quickJumpLabelInput").value.trim() || "快捷";
+  state.quickJump.url = $("#quickJumpUrlInput").value.trim();
 }
 
 function autoSaveFromForm(formSelector, sync) {
@@ -297,7 +333,7 @@ function autoSaveFromForm(formSelector, sync) {
     if (!event.target.matches("input, textarea")) return;
     window.clearTimeout(timer);
     timer = window.setTimeout(() => {
-      sync();
+      sync({ remember: true });
       saveState();
       renderDashboard();
     }, 350);
@@ -399,6 +435,7 @@ $("#dailyForm").addEventListener("submit", (event) => {
 $("#noteForm").addEventListener("submit", (event) => {
   event.preventDefault();
   const text = $("#noteTextInput").value.trim();
+  syncQuickJumpForm();
   if (!text) return;
 
   rememberState();
@@ -426,12 +463,14 @@ $("#saveDailyRecordButton").addEventListener("click", () => {
   rememberState();
   const today = new Date().toISOString().slice(0, 10);
   const totalBalance = getTotalBalance();
+  const days = getDaysUntilLivingFee();
+  const divisor = Math.max(1, days);
   const record = {
     id: createId(),
     date: today,
     totalBalance,
-    daysUntilLivingFee: state.daysUntilLivingFee,
-    dailyCanUse: totalBalance / state.daysUntilLivingFee,
+    daysUntilLivingFee: days,
+    dailyCanUse: totalBalance / divisor,
     balances: clone(state.balances),
   };
 
@@ -466,7 +505,9 @@ $("#clearRecordsButton").addEventListener("click", () => {
 });
 
 $("#resetButton").addEventListener("click", () => {
+  if (!window.confirm("加载示例会替换当前数据。已支持撤销，但建议确认后再继续。")) return;
   rememberState();
+  localStorage.setItem(`${storeKey}-before-sample`, JSON.stringify(state));
   state = clone(sampleState);
   saveState();
   renderAll();
@@ -495,6 +536,31 @@ function switchView(viewId) {
 
 autoSaveFromForm("#debtForm", syncDebtForm);
 autoSaveFromForm("#dailyForm", syncDailyForm);
+
+$("#noteForm").addEventListener("input", (event) => {
+  if (!event.target.matches("#quickJumpLabelInput, #quickJumpUrlInput")) return;
+  syncQuickJumpForm();
+  saveState();
+  renderQuickJump();
+});
+
+$("#installmentNote").addEventListener("click", () => {
+  const nextNote = window.prompt("修改分期说明", state.installmentNote || $("#installmentNote").textContent);
+  if (nextNote === null) return;
+  rememberState();
+  state.installmentNote = nextNote.trim();
+  saveState();
+  renderAll();
+});
+
+$("#quickJumpButton").addEventListener("click", () => {
+  if (!state.quickJump.url) {
+    switchView("calculatorView");
+    document.querySelector('[data-tab="note"]').click();
+    return;
+  }
+  window.location.href = state.quickJump.url;
+});
 
 document.addEventListener("click", (event) => {
   if (event.target.classList.contains("inline-number-input")) return;

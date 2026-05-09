@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>手机记账</title>
+    <title>理财</title>
     <meta name="theme-color" content="#050505" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="记账" />
+    <meta name="apple-mobile-web-app-title" content="理财" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
@@ -16,13 +16,13 @@
     <main class="app-shell">
       <header class="topbar">
         <div>
-          <div class="app-name">生活费计算器</div>
+          <div class="app-name">理财</div>
           <time id="nowText" class="time-text"></time>
         </div>
         <div class="top-actions">
           <button id="undoButton" class="tool-button" type="button" aria-label="撤销">↶</button>
           <button id="redoButton" class="tool-button" type="button" aria-label="恢复">↷</button>
-          <div id="saveStatus" class="save-status">已保存</div>
+          <button id="quickJumpButton" class="quick-jump" type="button">支付宝</button>
         </div>
       </header>
 
@@ -114,6 +114,10 @@
               分期期数
               <input id="installmentMonthsInput" type="number" min="1" step="1" />
             </label>
+            <label class="wide">
+              分期说明
+              <textarea id="installmentNoteInput" maxlength="60" placeholder="例如：突发情况时用"></textarea>
+            </label>
             <button class="primary wide" type="submit">保存欠款</button>
           </form>
 
@@ -135,13 +139,21 @@
               <input id="otherBalanceInput" type="number" min="0" step="0.01" />
             </label>
             <label>
-              距离发生活费天数
-              <input id="daysInput" type="number" min="1" step="1" />
+              每月发生活费日
+              <input id="paydayDayInput" type="number" min="1" max="31" step="1" />
             </label>
             <button class="primary wide" type="submit">保存余额</button>
           </form>
 
           <form id="noteForm" class="editor">
+            <label>
+              快捷按钮文字
+              <input id="quickJumpLabelInput" type="text" maxlength="6" placeholder="支付宝" />
+            </label>
+            <label>
+              快捷跳转链接
+              <input id="quickJumpUrlInput" type="text" placeholder="alipays:// 或 weixin://" />
+            </label>
             <label class="wide">
               日期
               <input id="noteDateInput" type="date" required />
@@ -157,7 +169,7 @@
         <section class="timeline-section app-card" aria-labelledby="notesTitle">
           <div class="section-header">
             <h2 id="notesTitle">特殊情况</h2>
-            <button id="resetButton" class="ghost-button" type="button">恢复示例</button>
+            <button id="resetButton" class="ghost-button danger-button" type="button">加载示例</button>
           </div>
           <div id="notesList" class="timeline"></div>
         </section>
