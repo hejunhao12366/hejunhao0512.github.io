@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#050505"/>
+  <rect x="72" y="80" width="368" height="352" rx="42" fill="#151515" stroke="#303030" stroke-width="12"/>
+  <text x="106" y="190" fill="#f4f4f5" font-family="Arial, sans-serif" font-size="70" font-weight="800">总欠</text>
+  <rect x="104" y="230" width="126" height="52" rx="10" fill="#3a111d"/>
+  <text x="118" y="269" fill="#ff4d7a" font-family="Arial, sans-serif" font-size="38" font-weight="800">白条</text>
+  <rect x="104" y="300" width="126" height="52" rx="10" fill="#102344"/>
+  <text x="118" y="339" fill="#4b96ff" font-family="Arial, sans-serif" font-size="38" font-weight="800">花呗</text>
+  <text x="254" y="269" fill="#f4f4f5" font-family="Arial, sans-serif" font-size="38">2382</text>
+  <text x="254" y="339" fill="#f4f4f5" font-family="Arial, sans-serif" font-size="38">590</text>
+  <text x="104" y="398" fill="#61d9bd" font-family="Arial, sans-serif" font-size="48" font-weight="800">余额</text>
+</svg>

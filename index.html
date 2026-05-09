@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>手机记账</title>
+    <meta name="theme-color" content="#050505" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="记账" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <div class="app-name">生活费计算器</div>
+          <time id="nowText" class="time-text"></time>
+        </div>
+        <div class="top-actions">
+          <button id="undoButton" class="tool-button" type="button" aria-label="撤销">↶</button>
+          <button id="redoButton" class="tool-button" type="button" aria-label="恢复">↷</button>
+          <div id="saveStatus" class="save-status">已保存</div>
+        </div>
+      </header>
+
+      <div id="calculatorView" class="app-view active">
+        <section class="summary-section app-card hero-card" aria-labelledby="debtTitle">
+          <div class="section-kicker">欠款总览</div>
+          <h1 id="debtTitle">总欠</h1>
+          <div class="formula-line" id="debtFormula"></div>
+        </section>
+
+        <section class="month-panel app-card" aria-labelledby="repayTitle">
+          <div class="section-kicker">本月</div>
+          <h2 id="repayTitle">还款后生活费</h2>
+          <div class="formula-line large" id="repayFormula"></div>
+
+          <div class="badge">可用余额：</div>
+          <div class="balance-row">
+            <span>- 不分期：</span>
+            <span id="livingFeeText"></span>
+            <span>-</span>
+            <span class="tag purple" id="normalRepayText"></span>
+            <span>=</span>
+            <span class="tag mint" id="normalLeftText"></span>
+          </div>
+          <div class="balance-row">
+            <span>- 分期：</span>
+            <span id="livingFeeSplitText"></span>
+            <span>-</span>
+            <span class="tag purple" id="splitRepayText"></span>
+            <span>=</span>
+            <span class="tag mint" id="splitLeftText"></span>
+          </div>
+          <div class="note-pill" id="installmentNote"></div>
+        </section>
+
+        <section class="daily-panel app-card" aria-labelledby="dailyTitle">
+          <div class="section-kicker">今天</div>
+          <h2 id="dailyTitle">每天可用</h2>
+          <div id="balanceCards" class="balance-cards"></div>
+          <div class="total-strip">
+            <span>总余额</span>
+            <span class="tag purple" id="totalBalanceText"></span>
+          </div>
+          <div class="balance-row">
+            <span>距发生活费：</span>
+            <span class="tag yellow" id="daysText"></span>
+            <span>天</span>
+          </div>
+          <div class="balance-row">
+            <span>每天：</span>
+            <span class="tag mint" id="dailyCanUseText"></span>
+          </div>
+          <button id="saveDailyRecordButton" class="primary wide record-save-button" type="button">保存今日记录</button>
+        </section>
+
+        <section class="control-panel app-card" aria-label="编辑记账数据">
+          <div class="tabs" role="tablist" aria-label="编辑区">
+            <button class="tab active" type="button" data-tab="debt">欠款</button>
+            <button class="tab" type="button" data-tab="daily">余额</button>
+            <button class="tab" type="button" data-tab="note">备注</button>
+          </div>
+
+          <form id="debtForm" class="editor active">
+            <label>
+              白条总欠
+              <input id="baitiaoDebtInput" type="number" min="0" step="0.01" />
+            </label>
+            <label>
+              花呗总欠
+              <input id="huabeiDebtInput" type="number" min="0" step="0.01" />
+            </label>
+            <label>
+              本月白条还款
+              <input id="baitiaoRepayInput" type="number" min="0" step="0.01" />
+            </label>
+            <label>
+              本月花呗还款
+              <input id="huabeiRepayInput" type="number" min="0" step="0.01" />
+            </label>
+            <label>
+              本月生活费
+              <input id="livingFeeInput" type="number" min="0" step="0.01" />
+            </label>
+            <label>
+              突发需分期金额
+              <input id="installmentAmountInput" type="number" min="0" step="0.01" />
+            </label>
+            <label>
+              分期期数
+              <input id="installmentMonthsInput" type="number" min="1" step="1" />
+            </label>
+            <button class="primary wide" type="submit">保存欠款</button>
+          </form>
+
+          <form id="dailyForm" class="editor">
+            <label>
+              支付宝余额
+              <input id="alipayInput" type="number" min="0" step="0.01" />
+            </label>
+            <label>
+              微信余额
+              <input id="wechatInput" type="number" min="0" step="0.01" />
+            </label>
+            <label>
+              银行卡余额
+              <input id="bankInput" type="number" min="0" step="0.01" />
+            </label>
+            <label>
+              其他余额
+              <input id="otherBalanceInput" type="number" min="0" step="0.01" />
+            </label>
+            <label>
+              距离发生活费天数
+              <input id="daysInput" type="number" min="1" step="1" />
+            </label>
+            <button class="primary wide" type="submit">保存余额</button>
+          </form>
+
+          <form id="noteForm" class="editor">
+            <label class="wide">
+              日期
+              <input id="noteDateInput" type="date" required />
+            </label>
+            <label class="wide">
+              特殊情况备注
+              <textarea id="noteTextInput" maxlength="80" placeholder="例如：临时省 300，改成 285/12"></textarea>
+            </label>
+            <button class="primary wide" type="submit">添加备注</button>
+          </form>
+        </section>
+
+        <section class="timeline-section app-card" aria-labelledby="notesTitle">
+          <div class="section-header">
+            <h2 id="notesTitle">特殊情况</h2>
+            <button id="resetButton" class="ghost-button" type="button">恢复示例</button>
+          </div>
+          <div id="notesList" class="timeline"></div>
+        </section>
+      </div>
+
+      <div id="recordsView" class="app-view">
+        <section class="app-card hero-card">
+          <div class="section-kicker">历史记录</div>
+          <h1>总可用</h1>
+          <div class="record-summary" id="recordSummary"></div>
+        </section>
+
+        <section class="app-card">
+          <div class="section-header">
+            <h2>每天记录</h2>
+            <button id="clearRecordsButton" class="ghost-button" type="button">清空</button>
+          </div>
+          <div id="dailyRecordsList" class="records-list"></div>
+        </section>
+      </div>
+
+      <nav class="bottom-nav" aria-label="主导航">
+        <button class="nav-item active" type="button" data-view="calculatorView">计算</button>
+        <button class="nav-item" type="button" data-view="recordsView">记录</button>
+      </nav>
+    </main>
+
+    <script src="./app.js"></script>
+    <script>
+      if ("serviceWorker" in navigator && location.protocol !== "file:") {
+        navigator.serviceWorker.register("./service-worker.js");
+      }
+    </script>
+  </body>
+</html>
