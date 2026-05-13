@@ -27,6 +27,11 @@ const sampleState = {
     label: "支付宝",
     url: "alipays://",
   },
+  sync: {
+    token: "",
+    gistId: "",
+    updatedAt: 0,
+  },
   notes: [
     { id: createId(), date: "2026-04-24", text: "321.86 + 263.64 = 585.5，585/12 = 48.75" },
     { id: createId(), date: "2026-04-24", text: "省 300 -> 285/12 = 23.75" },
@@ -38,6 +43,8 @@ const sampleState = {
 let state = loadState();
 let undoStack = [];
 let redoStack = [];
+let syncTimer;
+let applyingCloudState = false;
 
 const $ = (selector) => document.querySelector(selector);
 const money = (value) => Number(value || 0).toFixed(2).replace(/\.?0+$/, "");
@@ -109,14 +116,21 @@ function normalizeState(nextState) {
       label: String(nextState.quickJump?.label || "支付宝"),
       url: String(nextState.quickJump?.url || "alipays://"),
     },
+    sync: {
+      token: String(nextState.sync?.token || ""),
+      gistId: String(nextState.sync?.gistId || ""),
+      updatedAt: Number(nextState.sync?.updatedAt || 0),
+    },
     notes: Array.isArray(nextState.notes) ? nextState.notes : [],
     dailyRecords: Array.isArray(nextState.dailyRecords) ? nextState.dailyRecords : [],
   };
 }
 
 function saveState() {
+  if (!applyingCloudState) state.sync.updatedAt = Date.now();
   localStorage.setItem(storeKey, JSON.stringify(state));
   updateHistoryButtons();
+  queueCloudUpload();
 }
 
 function renderClock() {
@@ -135,6 +149,7 @@ function renderClock() {
 function renderAll() {
   renderClock();
   renderQuickJump();
+  renderSyncSettings();
   renderDashboard();
   renderForms();
   renderNotes();
@@ -297,6 +312,8 @@ function renderForms() {
   $("#paydayDayInput").value = state.paydayDay;
   $("#quickJumpLabelInput").value = state.quickJump.label;
   $("#quickJumpUrlInput").value = state.quickJump.url;
+  $("#syncTokenInput").value = state.sync.token;
+  $("#syncGistInput").value = state.sync.gistId;
   $("#noteDateInput").value ||= new Date().toISOString().slice(0, 10);
 }
 
@@ -325,6 +342,12 @@ function syncQuickJumpForm({ remember = true } = {}) {
   if (remember) rememberState();
   state.quickJump.label = $("#quickJumpLabelInput").value.trim() || "快捷";
   state.quickJump.url = $("#quickJumpUrlInput").value.trim();
+}
+
+function syncCloudForm({ remember = true } = {}) {
+  if (remember) rememberState();
+  state.sync.token = $("#syncTokenInput").value.trim();
+  state.sync.gistId = $("#syncGistInput").value.trim();
 }
 
 function autoSaveFromForm(formSelector, sync) {
@@ -403,6 +426,13 @@ function renderDailyRecords() {
   });
 }
 
+function renderSyncSettings() {
+  const status = $("#syncStatus");
+  if (!status) return;
+  status.textContent = state.sync.gistId ? "已连接" : "未开启";
+  status.classList.toggle("connected", Boolean(state.sync.gistId));
+}
+
 function formatRecordDate(date) {
   const [, month, day] = date.split("-");
   return `${Number(month)}月${Number(day)}日`;
@@ -436,6 +466,7 @@ $("#noteForm").addEventListener("submit", (event) => {
   event.preventDefault();
   const text = $("#noteTextInput").value.trim();
   syncQuickJumpForm();
+  syncCloudForm();
   if (!text) return;
 
   rememberState();
@@ -538,10 +569,12 @@ autoSaveFromForm("#debtForm", syncDebtForm);
 autoSaveFromForm("#dailyForm", syncDailyForm);
 
 $("#noteForm").addEventListener("input", (event) => {
-  if (!event.target.matches("#quickJumpLabelInput, #quickJumpUrlInput")) return;
-  syncQuickJumpForm();
+  if (!event.target.matches("#quickJumpLabelInput, #quickJumpUrlInput, #syncTokenInput, #syncGistInput")) return;
+  syncQuickJumpForm({ remember: false });
+  syncCloudForm({ remember: false });
   saveState();
   renderQuickJump();
+  renderSyncSettings();
 });
 
 $("#installmentNote").addEventListener("click", () => {
@@ -561,6 +594,153 @@ $("#quickJumpButton").addEventListener("click", () => {
   }
   window.location.href = state.quickJump.url;
 });
+
+$("#createCloudButton").addEventListener("click", async () => {
+  syncCloudForm();
+  await createCloudSave();
+});
+
+$("#pullCloudButton").addEventListener("click", async () => {
+  syncCloudForm();
+  await pullCloudState({ force: true });
+});
+
+$("#pushCloudButton").addEventListener("click", async () => {
+  syncCloudForm();
+  await pushCloudState({ immediate: true });
+});
+
+function canUseCloud() {
+  return Boolean(state.sync.token && state.sync.gistId);
+}
+
+function setSyncStatus(message, connected = Boolean(state.sync.gistId)) {
+  const status = $("#syncStatus");
+  if (!status) return;
+  status.textContent = message;
+  status.classList.toggle("connected", connected);
+}
+
+function exportCloudState() {
+  const nextState = clone(state);
+  nextState.sync.token = "";
+  return nextState;
+}
+
+function applyCloudState(cloudState) {
+  const localSync = clone(state.sync);
+  const nextState = normalizeState(cloudState);
+  nextState.sync.token = localSync.token;
+  nextState.sync.gistId = localSync.gistId || nextState.sync.gistId;
+  nextState.sync.updatedAt = Math.max(nextState.sync.updatedAt, Number(cloudState.sync?.updatedAt || 0));
+  applyingCloudState = true;
+  state = nextState;
+  localStorage.setItem(storeKey, JSON.stringify(state));
+  applyingCloudState = false;
+  renderAll();
+}
+
+function queueCloudUpload() {
+  if (applyingCloudState || !canUseCloud()) return;
+  window.clearTimeout(syncTimer);
+  syncTimer = window.setTimeout(() => pushCloudState(), 900);
+}
+
+async function createCloudSave() {
+  if (!state.sync.token) {
+    setSyncStatus("先填 Token", false);
+    return;
+  }
+
+  try {
+    setSyncStatus("创建中...");
+    const response = await fetch("https://api.github.com/gists", {
+      method: "POST",
+      headers: getGithubHeaders(),
+      body: JSON.stringify({
+        description: "理财 App 云同步数据",
+        public: false,
+        files: {
+          "licai-data.json": {
+            content: JSON.stringify(exportCloudState(), null, 2),
+          },
+        },
+      }),
+    });
+    if (!response.ok) throw new Error(`创建失败 ${response.status}`);
+    const gist = await response.json();
+    state.sync.gistId = gist.id;
+    $("#syncGistInput").value = gist.id;
+    saveState();
+    setSyncStatus("已创建");
+  } catch (error) {
+    setSyncStatus(error.message, false);
+  }
+}
+
+async function pushCloudState() {
+  if (!canUseCloud()) return;
+
+  try {
+    setSyncStatus("上传中...");
+    const response = await fetch(`https://api.github.com/gists/${state.sync.gistId}`, {
+      method: "PATCH",
+      headers: getGithubHeaders(),
+      body: JSON.stringify({
+        files: {
+          "licai-data.json": {
+            content: JSON.stringify(exportCloudState(), null, 2),
+          },
+        },
+      }),
+    });
+    if (!response.ok) throw new Error(`上传失败 ${response.status}`);
+    setSyncStatus("已同步");
+  } catch (error) {
+    setSyncStatus(error.message, false);
+  }
+}
+
+async function pullCloudState({ force = false } = {}) {
+  if (!canUseCloud()) return;
+
+  try {
+    setSyncStatus("下载中...");
+    const response = await fetch(`https://api.github.com/gists/${state.sync.gistId}`, {
+      headers: getGithubHeaders(),
+    });
+    if (!response.ok) throw new Error(`下载失败 ${response.status}`);
+    const gist = await response.json();
+    const file = gist.files?.["licai-data.json"];
+    if (!file?.content) throw new Error("云端无数据");
+    const cloudState = normalizeState(JSON.parse(file.content));
+    if (!force && cloudState.sync.updatedAt <= state.sync.updatedAt) {
+      setSyncStatus("已是最新");
+      return;
+    }
+    rememberState();
+    applyCloudState(cloudState);
+    setSyncStatus("已更新");
+  } catch (error) {
+    setSyncStatus(error.message, false);
+  }
+}
+
+function getGithubHeaders() {
+  return {
+    Authorization: `Bearer ${state.sync.token}`,
+    Accept: "application/vnd.github+json",
+    "Content-Type": "application/json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) pullCloudState();
+});
+
+window.addEventListener("focus", () => pullCloudState());
+setInterval(() => pullCloudState(), 30_000);
 
 document.addEventListener("click", (event) => {
   if (event.target.classList.contains("inline-number-input")) return;
