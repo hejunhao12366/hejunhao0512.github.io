@@ -653,7 +653,7 @@ function applyCloudState(cloudState) {
 function queueCloudUpload() {
   if (applyingCloudState || !canUseCloud()) return;
   window.clearTimeout(syncTimer);
-  syncTimer = window.setTimeout(() => pushCloudState(), 900);
+  syncTimer = window.setTimeout(() => pushCloudState(), 300);
 }
 
 async function createCloudSave() {
@@ -750,7 +750,7 @@ document.addEventListener("visibilitychange", () => {
 });
 
 window.addEventListener("focus", () => pullCloudState());
-setInterval(() => pullCloudState(), 30_000);
+setInterval(() => pullCloudState(), 5_000);
 
 document.addEventListener("click", (event) => {
   if (event.target.classList.contains("inline-number-input")) return;
