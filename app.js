@@ -429,8 +429,14 @@ function renderDailyRecords() {
 function renderSyncSettings() {
   const status = $("#syncStatus");
   if (!status) return;
-  status.textContent = state.sync.gistId ? "已连接" : "未开启";
+  status.textContent = state.sync.gistId ? `本机 ${formatSyncTime(state.sync.updatedAt)}` : "未开启";
   status.classList.toggle("connected", Boolean(state.sync.gistId));
+}
+
+function formatSyncTime(timestamp) {
+  if (!timestamp) return "未保存";
+  const date = new Date(timestamp);
+  return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 function formatRecordDate(date) {
@@ -576,7 +582,7 @@ $("#noteForm").addEventListener("input", (event) => {
   saveState({ upload: !isSyncField, touch: !isSyncField });
   renderQuickJump();
   renderSyncSettings();
-  if (isSyncField && state.sync.gistId) setSyncStatus("先点下载");
+  if (isSyncField && state.sync.gistId) setSyncStatus("选恢复或覆盖");
 });
 
 $("#installmentNote").addEventListener("click", () => {
@@ -676,7 +682,7 @@ async function createCloudSave() {
     state.sync.gistId = gist.id;
     $("#syncGistInput").value = gist.id;
     saveState({ upload: false, touch: false });
-    setSyncStatus("已创建");
+    setSyncStatus("已创建，点覆盖");
   } catch (error) {
     setSyncStatus(error.message, false);
   }
@@ -699,7 +705,7 @@ async function pushCloudState() {
       }),
     });
     if (!response.ok) throw new Error(`上传失败 ${response.status}`);
-    setSyncStatus("已同步");
+    setSyncStatus(`已覆盖 ${formatSyncTime(state.sync.updatedAt)}`);
   } catch (error) {
     setSyncStatus(error.message, false);
   }
@@ -719,12 +725,12 @@ async function pullCloudState({ force = false } = {}) {
     if (!file?.content) throw new Error("云端无数据");
     const cloudState = normalizeState(JSON.parse(file.content));
     if (!force && cloudState.sync.updatedAt <= state.sync.updatedAt) {
-      setSyncStatus("已是最新");
+      setSyncStatus(`无更新 ${formatSyncTime(state.sync.updatedAt)}`);
       return;
     }
     rememberState();
     applyCloudState(cloudState);
-    setSyncStatus("已更新");
+    setSyncStatus(`已恢复 ${formatSyncTime(state.sync.updatedAt)}`);
   } catch (error) {
     setSyncStatus(error.message, false);
   }

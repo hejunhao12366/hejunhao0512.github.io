@@ -499,6 +499,13 @@ textarea {
   color: var(--mint);
 }
 
+.sync-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 .sync-actions {
   display: grid;
   grid-template-columns: 1fr;

@@ -165,9 +165,10 @@
             <button class="primary wide" type="submit">添加备注</button>
             <div class="sync-panel wide">
               <div class="sync-head">
-                <strong>云同步</strong>
+                <strong>同步助手</strong>
                 <span id="syncStatus">未开启</span>
               </div>
+              <p class="sync-help">先在数据正确的入口点“用这台覆盖云端”，再到其他入口点“用云端恢复这台”。</p>
               <label>
                 GitHub Token
                 <input id="syncTokenInput" type="password" placeholder="只保存在你的浏览器里" autocomplete="off" />
@@ -178,8 +179,8 @@
               </label>
               <div class="sync-actions">
                 <button id="createCloudButton" class="ghost-button" type="button">创建云存档</button>
-                <button id="pullCloudButton" class="ghost-button" type="button">从云端下载</button>
-                <button id="pushCloudButton" class="ghost-button" type="button">上传到云端</button>
+                <button id="pushCloudButton" class="primary" type="button">用这台覆盖云端</button>
+                <button id="pullCloudButton" class="ghost-button" type="button">用云端恢复这台</button>
               </div>
             </div>
           </form>
