@@ -126,11 +126,11 @@ function normalizeState(nextState) {
   };
 }
 
-function saveState() {
-  if (!applyingCloudState) state.sync.updatedAt = Date.now();
+function saveState({ upload = true, touch = true } = {}) {
+  if (!applyingCloudState && touch) state.sync.updatedAt = Date.now();
   localStorage.setItem(storeKey, JSON.stringify(state));
   updateHistoryButtons();
-  queueCloudUpload();
+  if (upload) queueCloudUpload();
 }
 
 function renderClock() {
@@ -570,11 +570,13 @@ autoSaveFromForm("#dailyForm", syncDailyForm);
 
 $("#noteForm").addEventListener("input", (event) => {
   if (!event.target.matches("#quickJumpLabelInput, #quickJumpUrlInput, #syncTokenInput, #syncGistInput")) return;
-  syncQuickJumpForm({ remember: false });
+  const isSyncField = event.target.matches("#syncTokenInput, #syncGistInput");
+  if (!isSyncField) syncQuickJumpForm({ remember: false });
   syncCloudForm({ remember: false });
-  saveState();
+  saveState({ upload: !isSyncField, touch: !isSyncField });
   renderQuickJump();
   renderSyncSettings();
+  if (isSyncField && state.sync.gistId) setSyncStatus("先点下载");
 });
 
 $("#installmentNote").addEventListener("click", () => {
@@ -601,12 +603,14 @@ $("#createCloudButton").addEventListener("click", async () => {
 });
 
 $("#pullCloudButton").addEventListener("click", async () => {
-  syncCloudForm();
+  syncCloudForm({ remember: false });
+  saveState({ upload: false, touch: false });
   await pullCloudState({ force: true });
 });
 
 $("#pushCloudButton").addEventListener("click", async () => {
-  syncCloudForm();
+  syncCloudForm({ remember: false });
+  saveState({ upload: false, touch: false });
   await pushCloudState({ immediate: true });
 });
 
@@ -671,7 +675,7 @@ async function createCloudSave() {
     const gist = await response.json();
     state.sync.gistId = gist.id;
     $("#syncGistInput").value = gist.id;
-    saveState();
+    saveState({ upload: false, touch: false });
     setSyncStatus("已创建");
   } catch (error) {
     setSyncStatus(error.message, false);
