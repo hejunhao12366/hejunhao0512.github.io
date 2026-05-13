@@ -1,12 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#050505"/>
-  <rect x="72" y="80" width="368" height="352" rx="42" fill="#151515" stroke="#303030" stroke-width="12"/>
-  <text x="106" y="190" fill="#f4f4f5" font-family="Arial, sans-serif" font-size="70" font-weight="800">总欠</text>
-  <rect x="104" y="230" width="126" height="52" rx="10" fill="#3a111d"/>
-  <text x="118" y="269" fill="#ff4d7a" font-family="Arial, sans-serif" font-size="38" font-weight="800">白条</text>
-  <rect x="104" y="300" width="126" height="52" rx="10" fill="#102344"/>
-  <text x="118" y="339" fill="#4b96ff" font-family="Arial, sans-serif" font-size="38" font-weight="800">花呗</text>
-  <text x="254" y="269" fill="#f4f4f5" font-family="Arial, sans-serif" font-size="38">2382</text>
-  <text x="254" y="339" fill="#f4f4f5" font-family="Arial, sans-serif" font-size="38">590</text>
-  <text x="104" y="398" fill="#61d9bd" font-family="Arial, sans-serif" font-size="48" font-weight="800">余额</text>
+  <defs>
+    <linearGradient id="bg" x1="84" y1="42" x2="438" y2="470" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7bdcc5"/>
+      <stop offset="0.48" stop-color="#4b96ff"/>
+      <stop offset="1" stop-color="#e040ff"/>
+    </linearGradient>
+    <linearGradient id="card" x1="126" y1="120" x2="386" y2="390" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#202638"/>
+      <stop offset="1" stop-color="#11141f"/>
+    </linearGradient>
+    <filter id="shadow" x="40" y="44" width="432" height="432" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#05070c" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="#0b0d13"/>
+  <circle cx="118" cy="104" r="64" fill="#7bdcc5" opacity="0.28"/>
+  <circle cx="416" cy="142" r="78" fill="#4b96ff" opacity="0.18"/>
+  <circle cx="380" cy="410" r="92" fill="#e040ff" opacity="0.16"/>
+  <g filter="url(#shadow)">
+    <rect x="92" y="90" width="328" height="332" rx="58" fill="url(#card)" stroke="rgba(255,255,255,0.16)" stroke-width="8"/>
+    <rect x="128" y="132" width="256" height="78" rx="28" fill="rgba(255,255,255,0.07)"/>
+    <path d="M168 272h176" stroke="url(#bg)" stroke-width="36" stroke-linecap="round"/>
+    <path d="M168 338h112" stroke="#7bdcc5" stroke-width="36" stroke-linecap="round"/>
+    <circle cx="344" cy="338" r="28" fill="#ffc640"/>
+    <path d="M184 174h144" stroke="#f4f4f5" stroke-width="24" stroke-linecap="round"/>
+    <path d="M184 174l44-38m-44 38l44 38" stroke="#f4f4f5" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+  </g>
 </svg>
