@@ -27,6 +27,26 @@
       </header>
 
       <div id="calculatorView" class="app-view active">
+        <section class="daily-panel app-card" aria-labelledby="dailyTitle">
+          <div class="section-kicker">今天</div>
+          <h2 id="dailyTitle">每天可用</h2>
+          <div id="balanceCards" class="balance-cards"></div>
+          <div class="total-strip">
+            <span>总余额</span>
+            <span class="tag purple" id="totalBalanceText"></span>
+          </div>
+          <div class="balance-row">
+            <span>距发生活费：</span>
+            <span class="tag yellow" id="daysText"></span>
+            <span>天</span>
+          </div>
+          <div class="balance-row">
+            <span>每天：</span>
+            <span class="tag mint" id="dailyCanUseText"></span>
+          </div>
+          <button id="saveDailyRecordButton" class="primary wide record-save-button" type="button">保存今日记录</button>
+        </section>
+
         <section class="summary-section app-card hero-card" aria-labelledby="debtTitle">
           <div class="section-kicker">欠款总览</div>
           <h1 id="debtTitle">总欠</h1>
@@ -56,26 +76,6 @@
             <span class="tag mint" id="splitLeftText"></span>
           </div>
           <div class="note-pill" id="installmentNote"></div>
-        </section>
-
-        <section class="daily-panel app-card" aria-labelledby="dailyTitle">
-          <div class="section-kicker">今天</div>
-          <h2 id="dailyTitle">每天可用</h2>
-          <div id="balanceCards" class="balance-cards"></div>
-          <div class="total-strip">
-            <span>总余额</span>
-            <span class="tag purple" id="totalBalanceText"></span>
-          </div>
-          <div class="balance-row">
-            <span>距发生活费：</span>
-            <span class="tag yellow" id="daysText"></span>
-            <span>天</span>
-          </div>
-          <div class="balance-row">
-            <span>每天：</span>
-            <span class="tag mint" id="dailyCanUseText"></span>
-          </div>
-          <button id="saveDailyRecordButton" class="primary wide record-save-button" type="button">保存今日记录</button>
         </section>
 
         <section class="control-panel app-card" aria-label="编辑记账数据">
