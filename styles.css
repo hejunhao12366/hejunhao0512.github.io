@@ -383,6 +383,45 @@ h2 {
   cursor: text;
 }
 
+.daily-highlight {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 14px 16px;
+  border: 1px solid rgba(123, 220, 197, 0.18);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(123, 220, 197, 0.16), rgba(94, 207, 179, 0.08));
+}
+
+.daily-highlight-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(244, 244, 245, 0.82);
+  font-size: 14px;
+}
+
+.daily-highlight-value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: #c7fff2;
+}
+
+.daily-highlight-number {
+  font-size: 42px;
+  line-height: 0.95;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.daily-highlight-unit {
+  color: rgba(199, 255, 242, 0.78);
+  font-size: 18px;
+  font-weight: 700;
+}
+
 .control-panel {
   overflow: hidden;
   padding: 0;
@@ -684,5 +723,13 @@ textarea {
 
   .record-grid {
     grid-template-columns: 1fr;
+  }
+
+  .daily-highlight-value {
+    align-items: flex-end;
+  }
+
+  .daily-highlight-number {
+    font-size: 36px;
   }
 }

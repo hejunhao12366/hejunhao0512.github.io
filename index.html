@@ -40,9 +40,15 @@
             <span class="tag yellow" id="daysText"></span>
             <span>天</span>
           </div>
-          <div class="balance-row">
-            <span>每天：</span>
-            <span class="tag mint" id="dailyCanUseText"></span>
+          <div class="daily-highlight">
+            <div class="daily-highlight-head">
+              <span>每天</span>
+              <span id="dailyFormulaText"></span>
+            </div>
+            <div class="daily-highlight-value">
+              <span class="daily-highlight-number" id="dailyCanUseText"></span>
+              <span class="daily-highlight-unit">/ 天</span>
+            </div>
           </div>
           <button id="saveDailyRecordButton" class="primary wide record-save-button" type="button">保存今日记录</button>
         </section>

@@ -198,7 +198,8 @@ function renderDaily() {
   renderBalanceCards(balanceItems);
   $("#totalBalanceText").textContent = money(totalBalance);
   $("#daysText").textContent = days;
-  $("#dailyCanUseText").textContent = `${money(totalBalance)} / ${divisor} = ${money(totalBalance / divisor)}`;
+  $("#dailyFormulaText").textContent = `${money(totalBalance)} / ${divisor}`;
+  $("#dailyCanUseText").textContent = money(totalBalance / divisor);
 }
 
 function renderQuickJump() {
