@@ -27,6 +27,7 @@ body {
     var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  -webkit-text-size-adjust: 100%;
 }
 
 button,
@@ -40,7 +41,7 @@ textarea {
   width: min(100%, 480px);
   min-height: 100vh;
   margin: 0 auto;
-  padding: max(18px, env(safe-area-inset-top)) 14px max(110px, env(safe-area-inset-bottom));
+  padding: max(18px, env(safe-area-inset-top)) 14px max(156px, calc(env(safe-area-inset-bottom) + 118px));
 }
 
 .topbar,
@@ -385,10 +386,10 @@ h2 {
 .daily-highlight {
   display: grid;
   gap: 8px;
-  margin-top: 8px;
-  padding: 14px 16px;
+  margin: 12px 0 14px;
+  padding: 18px 18px 16px;
   border: 1px solid rgba(123, 220, 197, 0.18);
-  border-radius: 18px;
+  border-radius: 22px;
   background: linear-gradient(135deg, rgba(123, 220, 197, 0.16), rgba(94, 207, 179, 0.08));
 }
 
@@ -406,10 +407,11 @@ h2 {
   align-items: baseline;
   gap: 8px;
   color: #c7fff2;
+  flex-wrap: wrap;
 }
 
 .daily-highlight-number {
-  font-size: 42px;
+  font-size: 56px;
   line-height: 0.95;
   font-weight: 900;
   letter-spacing: 0;
@@ -471,6 +473,20 @@ textarea {
   color: var(--text);
   padding: 10px;
   min-height: 44px;
+}
+
+input[type="date"] {
+  padding-right: 44px;
+  text-align: left;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.82;
+  filter: invert(1) brightness(0.92);
 }
 
 textarea {
@@ -654,11 +670,11 @@ textarea {
   left: 50%;
   bottom: max(14px, env(safe-area-inset-bottom));
   z-index: 20;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  width: min(420px, calc(100% - 32px));
-  padding: 6px;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: min(420px, calc(100% - 24px));
+  padding: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 999px;
   background: rgba(18, 21, 31, 0.92);
@@ -668,11 +684,19 @@ textarea {
 }
 
 .nav-item {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-height: 44px;
+  padding: 0 10px;
   border: 0;
   border-radius: 999px;
   background: transparent;
   color: var(--muted);
+  white-space: nowrap;
+  text-align: center;
   font-weight: 800;
 }
 
@@ -726,6 +750,6 @@ textarea {
   }
 
   .daily-highlight-number {
-    font-size: 36px;
+    font-size: 46px;
   }
 }
