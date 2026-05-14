@@ -128,7 +128,6 @@ h2 {
 .summary-section,
 .month-panel,
 .daily-panel,
-.control-panel,
 .timeline-section {
   margin-bottom: 14px;
 }
@@ -422,42 +421,33 @@ h2 {
   font-weight: 700;
 }
 
-.control-panel {
-  overflow: hidden;
-  padding: 0;
-}
-
-.tabs {
+.settings-hero {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  border-bottom: 1px solid var(--line);
-  padding: 6px;
-  gap: 6px;
-}
-
-.tab {
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  color: var(--muted);
-  padding: 12px;
-}
-
-.tab.active {
-  color: var(--text);
-  background: var(--panel-2);
-  font-weight: 700;
-}
-
-.editor {
-  display: none;
-  grid-template-columns: 1fr 1fr;
   gap: 12px;
-  padding: 14px;
+  margin-bottom: 14px;
+  padding: 18px;
+  background:
+    linear-gradient(145deg, rgba(25, 34, 46, 0.98), rgba(13, 18, 28, 0.98));
 }
 
-.editor.active {
+.settings-copy {
+  margin: 0;
+  color: #b2bac8;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.settings-card {
   display: grid;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.settings-form,
+.sync-login {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
 }
 
 label {
@@ -508,14 +498,9 @@ textarea {
   margin-top: 12px;
 }
 
-.sync-panel {
-  display: grid;
-  gap: 12px;
-  margin-top: 8px;
-  padding: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.045);
+.sync-card {
+  background:
+    linear-gradient(180deg, rgba(28, 36, 50, 0.98), rgba(17, 22, 32, 0.98));
 }
 
 .sync-head {
@@ -670,9 +655,9 @@ textarea {
   bottom: max(14px, env(safe-area-inset-bottom));
   z-index: 20;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  width: min(320px, calc(100% - 32px));
+  width: min(420px, calc(100% - 32px));
   padding: 6px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 999px;
@@ -694,6 +679,17 @@ textarea {
 .nav-item.active {
   background: linear-gradient(135deg, #7bdcc5, #5ecfb3);
   color: #07100d;
+}
+
+@media (min-width: 430px) {
+  .settings-form,
+  .sync-login {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sync-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 360px) {

@@ -44,6 +44,7 @@ let state = loadState();
 let undoStack = [];
 let redoStack = [];
 let syncTimer;
+let syncFieldTimer;
 let applyingCloudState = false;
 
 const $ = (selector) => document.querySelector(selector);
@@ -551,15 +552,6 @@ $("#resetButton").addEventListener("click", () => {
   renderAll();
 });
 
-document.querySelectorAll(".tab").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach((item) => item.classList.remove("active"));
-    document.querySelectorAll(".editor").forEach((item) => item.classList.remove("active"));
-    tab.classList.add("active");
-    $(`#${tab.dataset.tab}Form`).classList.add("active");
-  });
-});
-
 document.querySelectorAll(".nav-item").forEach((button) => {
   button.addEventListener("click", () => switchView(button.dataset.view));
 });
@@ -576,14 +568,29 @@ autoSaveFromForm("#debtForm", syncDebtForm);
 autoSaveFromForm("#dailyForm", syncDailyForm);
 
 $("#noteForm").addEventListener("input", (event) => {
-  if (!event.target.matches("#quickJumpLabelInput, #quickJumpUrlInput, #syncTokenInput, #syncGistInput")) return;
-  const isSyncField = event.target.matches("#syncTokenInput, #syncGistInput");
-  if (!isSyncField) syncQuickJumpForm({ remember: false });
-  syncCloudForm({ remember: false });
-  saveState({ upload: !isSyncField, touch: !isSyncField });
+  if (!event.target.matches("#quickJumpLabelInput, #quickJumpUrlInput")) return;
+  syncQuickJumpForm({ remember: false });
+  saveState({ upload: false, touch: false });
   renderQuickJump();
-  renderSyncSettings();
-  if (isSyncField && state.sync.gistId) setSyncStatus("选恢复或覆盖");
+});
+
+["#syncTokenInput", "#syncGistInput"].forEach((selector) => {
+  $(selector).addEventListener("input", () => {
+    window.clearTimeout(syncFieldTimer);
+    syncCloudForm({ remember: false });
+    saveState({ upload: false, touch: false });
+    renderSyncSettings();
+
+    if (!canUseCloud()) {
+      setSyncStatus("\u672A\u5F00\u542F", false);
+      return;
+    }
+
+    setSyncStatus("\u6B63\u5728\u8FDE\u63A5...");
+    syncFieldTimer = window.setTimeout(() => {
+      pullCloudState({ force: true });
+    }, 600);
+  });
 });
 
 $("#installmentNote").addEventListener("click", () => {
@@ -597,8 +604,8 @@ $("#installmentNote").addEventListener("click", () => {
 
 $("#quickJumpButton").addEventListener("click", () => {
   if (!state.quickJump.url) {
-    switchView("calculatorView");
-    document.querySelector('[data-tab="note"]').click();
+    switchView("settingsView");
+    $("#quickJumpUrlInput").focus();
     return;
   }
   window.location.href = state.quickJump.url;

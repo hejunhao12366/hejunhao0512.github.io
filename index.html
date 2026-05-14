@@ -84,14 +84,63 @@
           <div class="note-pill" id="installmentNote"></div>
         </section>
 
-        <section class="control-panel app-card" aria-label="编辑记账数据">
-          <div class="tabs" role="tablist" aria-label="编辑区">
-            <button class="tab active" type="button" data-tab="debt">欠款</button>
-            <button class="tab" type="button" data-tab="daily">余额</button>
-            <button class="tab" type="button" data-tab="note">备注</button>
-          </div>
+      </div>
 
-          <form id="debtForm" class="editor active">
+      <div id="recordsView" class="app-view">
+        <section class="app-card hero-card">
+          <div class="section-kicker">历史记录</div>
+          <h1>总可用</h1>
+          <div class="record-summary" id="recordSummary"></div>
+        </section>
+
+        <section class="app-card">
+          <div class="section-header">
+            <h2>每天记录</h2>
+            <button id="clearRecordsButton" class="ghost-button" type="button">清空</button>
+          </div>
+          <div id="dailyRecordsList" class="records-list"></div>
+        </section>
+      </div>
+
+      <div id="settingsView" class="app-view">
+        <section class="app-card settings-hero">
+          <div class="section-kicker">设置</div>
+          <h1>数据中心</h1>
+          <p class="settings-copy">输入、备注和同步都集中在这里。计算页只看结果，会更清爽一点。</p>
+        </section>
+
+
+        <section class="app-card settings-card sync-card">
+          <div class="sync-head">
+            <div>
+              <div class="section-kicker">同步助手</div>
+              <h2>账号同步</h2>
+            </div>
+            <span id="syncStatus">未开启</span>
+          </div>
+          <p class="sync-help">这里像登录账号一样填一次。填完后会自动同步，数据正确的入口可以点“用这台覆盖云端”，其他入口点“用云端恢复这台”。</p>
+          <div class="sync-login">
+            <label>
+              GitHub Token
+              <input id="syncTokenInput" type="password" placeholder="只保存在你的浏览器里" autocomplete="off" />
+            </label>
+            <label>
+              云存档 ID
+              <input id="syncGistInput" type="text" placeholder="创建后自动填写" />
+            </label>
+          </div>
+          <div class="sync-actions">
+            <button id="createCloudButton" class="ghost-button" type="button">创建云存档</button>
+            <button id="pushCloudButton" class="primary" type="button">用这台覆盖云端</button>
+            <button id="pullCloudButton" class="ghost-button" type="button">用云端恢复这台</button>
+          </div>
+        </section>
+
+        <section class="app-card settings-card">
+          <div class="section-header">
+            <h2>欠款设置</h2>
+          </div>
+          <form id="debtForm" class="settings-form">
             <label>
               白条总欠
               <input id="baitiaoDebtInput" type="number" min="0" step="0.01" />
@@ -126,8 +175,13 @@
             </label>
             <button class="primary wide" type="submit">保存欠款</button>
           </form>
+        </section>
 
-          <form id="dailyForm" class="editor">
+        <section class="app-card settings-card">
+          <div class="section-header">
+            <h2>余额设置</h2>
+          </div>
+          <form id="dailyForm" class="settings-form">
             <label>
               支付宝余额
               <input id="alipayInput" type="number" min="0" step="0.01" />
@@ -150,8 +204,14 @@
             </label>
             <button class="primary wide" type="submit">保存余额</button>
           </form>
+        </section>
 
-          <form id="noteForm" class="editor">
+        <section class="app-card settings-card">
+          <div class="section-header">
+            <h2>快捷与备注</h2>
+            <button id="resetButton" class="ghost-button danger-button" type="button">加载示例</button>
+          </div>
+          <form id="noteForm" class="settings-form">
             <label>
               快捷按钮文字
               <input id="quickJumpLabelInput" type="text" maxlength="6" placeholder="支付宝" />
@@ -169,57 +229,21 @@
               <textarea id="noteTextInput" maxlength="80" placeholder="例如：临时省 300，改成 285/12"></textarea>
             </label>
             <button class="primary wide" type="submit">添加备注</button>
-            <div class="sync-panel wide">
-              <div class="sync-head">
-                <strong>同步助手</strong>
-                <span id="syncStatus">未开启</span>
-              </div>
-              <p class="sync-help">自动同步约 5 秒检查一次。先在数据正确的入口点“用这台覆盖云端”，其他入口点点“用云端恢复这台”。</p>
-              <label>
-                GitHub Token
-                <input id="syncTokenInput" type="password" placeholder="只保存在你的浏览器里" autocomplete="off" />
-              </label>
-              <label>
-                云存档 ID
-                <input id="syncGistInput" type="text" placeholder="创建后自动填写" />
-              </label>
-              <div class="sync-actions">
-                <button id="createCloudButton" class="ghost-button" type="button">创建云存档</button>
-                <button id="pushCloudButton" class="primary" type="button">用这台覆盖云端</button>
-                <button id="pullCloudButton" class="ghost-button" type="button">用云端恢复这台</button>
-              </div>
-            </div>
           </form>
         </section>
 
-        <section class="timeline-section app-card" aria-labelledby="notesTitle">
+        <section class="timeline-section app-card settings-card" aria-labelledby="notesTitle">
           <div class="section-header">
             <h2 id="notesTitle">特殊情况</h2>
-            <button id="resetButton" class="ghost-button danger-button" type="button">加载示例</button>
           </div>
           <div id="notesList" class="timeline"></div>
-        </section>
-      </div>
-
-      <div id="recordsView" class="app-view">
-        <section class="app-card hero-card">
-          <div class="section-kicker">历史记录</div>
-          <h1>总可用</h1>
-          <div class="record-summary" id="recordSummary"></div>
-        </section>
-
-        <section class="app-card">
-          <div class="section-header">
-            <h2>每天记录</h2>
-            <button id="clearRecordsButton" class="ghost-button" type="button">清空</button>
-          </div>
-          <div id="dailyRecordsList" class="records-list"></div>
         </section>
       </div>
 
       <nav class="bottom-nav" aria-label="主导航">
         <button class="nav-item active" type="button" data-view="calculatorView">计算</button>
         <button class="nav-item" type="button" data-view="recordsView">记录</button>
+        <button class="nav-item" type="button" data-view="settingsView">设置</button>
       </nav>
     </main>
 
