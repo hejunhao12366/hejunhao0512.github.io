@@ -147,18 +147,11 @@ h2 {
 }
 
 .app-view {
-  visibility: hidden;
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  pointer-events: none;
+  display: none;
 }
 
 .app-view.active {
-  position: relative;
-  visibility: visible;
-  pointer-events: auto;
+  display: block;
 }
 
 .hero-card {

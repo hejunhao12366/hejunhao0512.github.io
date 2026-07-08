@@ -595,11 +595,17 @@ document.querySelectorAll(".mode-opt").forEach((button) => {
 });
 
 function switchView(viewId) {
-  document.querySelectorAll(".app-view").forEach((view) => view.classList.remove("active"));
+  const current = document.querySelector(".app-view.active");
+  const next = document.getElementById(viewId);
+  if (next === current || !next) return;
+
+  // Activate next BEFORE deactivating current → always one view in flow
+  next.classList.add("active");
+  current?.classList.remove("active");
+
   document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
-  $(`#${viewId}`).classList.add("active");
   document.querySelector(`[data-view="${viewId}"]`).classList.add("active");
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo(0, 0);
 }
 
 autoSaveFromForm("#debtForm", syncDebtForm);
