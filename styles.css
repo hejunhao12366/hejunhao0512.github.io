@@ -20,6 +20,7 @@ html {
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -39,6 +40,24 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+button {
+  transition: opacity 0.15s ease, transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active:not(:disabled) {
+  opacity: 0.7;
+  transform: scale(0.97);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--mint) !important;
+  box-shadow: 0 0 0 2px rgba(97, 217, 189, 0.25);
 }
 
 .app-shell {
@@ -68,8 +87,8 @@ textarea {
 }
 
 .tool-button {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border: 1px solid var(--line);
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.06);
@@ -90,7 +109,7 @@ textarea {
 
 .quick-jump {
   max-width: 82px;
-  min-height: 36px;
+  min-height: 44px;
   padding: 7px 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -123,7 +142,7 @@ h2 {
 }
 
 h1 {
-  font-size: 44px;
+  font-size: clamp(32px, 9vw, 44px);
   line-height: 1;
   margin-bottom: 18px;
 }
@@ -423,7 +442,7 @@ h2 {
 }
 
 .daily-highlight-number {
-  font-size: 56px;
+  font-size: clamp(40px, 12vw, 56px);
   line-height: 0.95;
   font-weight: 900;
   letter-spacing: 0;
@@ -565,7 +584,7 @@ textarea {
 }
 
 .ghost-button {
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 12px;
   border: 1px solid var(--line);
   background: transparent;
@@ -604,8 +623,8 @@ textarea {
 
 .delete-entry {
   margin-left: auto;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border: 1px solid var(--line);
   border-radius: 50%;
   background: #171717;
@@ -669,8 +688,8 @@ textarea {
 }
 
 .delete-record {
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border: 1px solid var(--line);
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.06);
@@ -728,6 +747,7 @@ textarea {
 
 .mode-opt {
   padding: 5px 14px;
+  min-height: 36px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -769,7 +789,7 @@ body[data-mode="holiday"] .school-only { display: none; }
   }
 
   h1 {
-    font-size: 42px;
+    font-size: clamp(28px, 8vw, 36px);
   }
 
   .tag {
@@ -790,6 +810,6 @@ body[data-mode="holiday"] .school-only { display: none; }
   }
 
   .daily-highlight-number {
-    font-size: 46px;
+    font-size: clamp(32px, 10vw, 42px);
   }
 }

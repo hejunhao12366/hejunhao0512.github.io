@@ -565,6 +565,7 @@ $("#dailyRecordsList").addEventListener("click", (event) => {
 });
 
 $("#clearRecordsButton").addEventListener("click", () => {
+  if (!window.confirm("确定清空所有记录？")) return;
   rememberState();
   state.dailyRecords = [];
   saveState();
