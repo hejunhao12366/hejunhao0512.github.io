@@ -12,11 +12,14 @@
     <link rel="apple-touch-icon" href="./icon.svg" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body>
+  <body data-mode="school">
     <main class="app-shell">
       <header class="topbar">
         <div>
-          <div class="app-name">理财</div>
+          <div class="mode-switch" id="modeSwitch">
+            <button class="mode-opt active" type="button" data-mode="school">在校</button>
+            <button class="mode-opt" type="button" data-mode="holiday">假期</button>
+          </div>
           <time id="nowText" class="time-text"></time>
         </div>
         <div class="top-actions">
@@ -28,7 +31,7 @@
 
       <div id="calculatorView" class="app-view active">
         <section class="daily-panel app-card" aria-labelledby="dailyTitle">
-          <div class="section-kicker">今天</div>
+          <div class="section-kicker" id="dailyKicker">今天</div>
           <h2 id="dailyTitle">每天可用</h2>
           <div class="daily-highlight">
             <div class="daily-highlight-head">
@@ -46,7 +49,7 @@
             <span class="tag purple" id="totalBalanceText"></span>
           </div>
           <div class="balance-row">
-            <span>距发生活费：</span>
+            <span id="daysLabel">距发生活费：</span>
             <span class="tag yellow" id="daysText"></span>
             <span>天</span>
           </div>
@@ -118,7 +121,7 @@
             </div>
             <span id="syncStatus">未开启</span>
           </div>
-          <p class="sync-help">这里像登录账号一样填一次。填完后会自动同步，数据正确的入口可以点“用这台覆盖云端”，其他入口点“用云端恢复这台”。</p>
+          <p class="sync-help">这里像登录账号一样填一次。填完后会自动同步，数据正确的入口可以点"用这台覆盖云端"，其他入口点"用云端恢复这台"。</p>
           <div class="sync-login">
             <label>
               GitHub Token
@@ -198,9 +201,13 @@
               其他余额
               <input id="otherBalanceInput" type="number" min="0" step="0.01" />
             </label>
-            <label>
+            <label class="school-only">
               每月发生活费日
               <input id="paydayDayInput" type="number" min="1" max="31" step="1" />
+            </label>
+            <label class="holiday-only">
+              假期目标天数
+              <input id="holidayDaysInput" type="number" min="1" step="1" />
             </label>
             <button class="primary wide" type="submit">保存余额</button>
           </form>

@@ -4,6 +4,7 @@ const createId = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
 const sampleState = {
+  mode: "school",
   debts: {
     baitiao: 2382.52,
     huabei: 590.76,
@@ -23,6 +24,7 @@ const sampleState = {
     other: 0,
   },
   paydayDay: 12,
+  holidayDays: 30,
   quickJump: {
     label: "支付宝",
     url: "alipays://",
@@ -94,6 +96,7 @@ function migrateOldState(oldState) {
 
 function normalizeState(nextState) {
   return {
+    mode: nextState.mode === "holiday" ? "holiday" : "school",
     debts: {
       baitiao: Number(nextState.debts?.baitiao || 0),
       huabei: Number(nextState.debts?.huabei || 0),
@@ -113,6 +116,7 @@ function normalizeState(nextState) {
       other: Number(nextState.balances?.other || 0),
     },
     paydayDay: clampPayday(nextState.paydayDay || nextState.daysUntilLivingFee || 1),
+    holidayDays: Math.max(1, Math.round(Number(nextState.holidayDays) || 30)),
     quickJump: {
       label: String(nextState.quickJump?.label || "支付宝"),
       url: String(nextState.quickJump?.url || "alipays://"),
@@ -151,11 +155,19 @@ function renderAll() {
   renderClock();
   renderQuickJump();
   renderSyncSettings();
+  renderMode();
   renderDashboard();
   renderForms();
   renderNotes();
   renderDailyRecords();
   updateHistoryButtons();
+}
+
+function renderMode() {
+  document.body.dataset.mode = state.mode;
+  document.querySelectorAll(".mode-opt").forEach((opt) => {
+    opt.classList.toggle("active", opt.dataset.mode === state.mode);
+  });
 }
 
 function renderDashboard() {
@@ -193,7 +205,7 @@ function renderMonth() {
 function renderDaily() {
   const balanceItems = getBalanceItems();
   const totalBalance = getTotalBalance();
-  const days = getDaysUntilLivingFee();
+  const days = getDivisorDays();
   const divisor = Math.max(1, days);
 
   renderBalanceCards(balanceItems);
@@ -201,6 +213,20 @@ function renderDaily() {
   $("#daysText").textContent = days;
   $("#dailyFormulaText").textContent = `${money(totalBalance)} / ${divisor}`;
   $("#dailyCanUseText").textContent = money(totalBalance / divisor);
+
+  if (state.mode === "holiday") {
+    $("#dailyKicker").textContent = "假期";
+    $("#dailyTitle").textContent = "每天可用";
+    $("#daysLabel").textContent = "假期剩余：";
+  } else {
+    $("#dailyKicker").textContent = "今天";
+    $("#dailyTitle").textContent = "每天可用";
+    $("#daysLabel").textContent = "距发生活费：";
+  }
+}
+
+function getDivisorDays() {
+  return state.mode === "holiday" ? state.holidayDays : getDaysUntilLivingFee();
 }
 
 function renderQuickJump() {
@@ -312,6 +338,7 @@ function renderForms() {
   $("#bankInput").value = state.balances.bank;
   $("#otherBalanceInput").value = state.balances.other;
   $("#paydayDayInput").value = state.paydayDay;
+  $("#holidayDaysInput").value = state.holidayDays;
   $("#quickJumpLabelInput").value = state.quickJump.label;
   $("#quickJumpUrlInput").value = state.quickJump.url;
   $("#syncTokenInput").value = state.sync.token;
@@ -338,6 +365,7 @@ function syncDailyForm({ remember = true } = {}) {
   state.balances.bank = Number($("#bankInput").value || 0);
   state.balances.other = Number($("#otherBalanceInput").value || 0);
   state.paydayDay = clampPayday($("#paydayDayInput").value);
+  state.holidayDays = Math.max(1, Math.round(Number($("#holidayDaysInput").value || 30)));
 }
 
 function syncQuickJumpForm({ remember = true } = {}) {
@@ -502,7 +530,7 @@ $("#saveDailyRecordButton").addEventListener("click", () => {
   rememberState();
   const today = new Date().toISOString().slice(0, 10);
   const totalBalance = getTotalBalance();
-  const days = getDaysUntilLivingFee();
+  const days = getDivisorDays();
   const divisor = Math.max(1, days);
   const record = {
     id: createId(),
@@ -554,6 +582,16 @@ $("#resetButton").addEventListener("click", () => {
 
 document.querySelectorAll(".nav-item").forEach((button) => {
   button.addEventListener("click", () => switchView(button.dataset.view));
+});
+
+document.querySelectorAll(".mode-opt").forEach((button) => {
+  button.addEventListener("click", () => {
+    if (state.mode === button.dataset.mode) return;
+    rememberState();
+    state.mode = button.dataset.mode;
+    saveState();
+    renderAll();
+  });
 });
 
 function switchView(viewId) {

@@ -705,6 +705,34 @@ textarea {
   color: #07100d;
 }
 
+.mode-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mode-opt {
+  padding: 5px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.mode-opt.active {
+  background: linear-gradient(135deg, #7bdcc5, #5ecfb3);
+  color: #07100d;
+}
+
+body[data-mode="school"] .holiday-only { display: none; }
+body[data-mode="holiday"] .school-only { display: none; }
+
 @media (min-width: 430px) {
   .settings-form,
   .sync-login {
