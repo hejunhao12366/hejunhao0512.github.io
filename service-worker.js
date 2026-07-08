@@ -1,4 +1,4 @@
-const cacheName = "mobile-ledger-v19";
+const cacheName = "mobile-ledger-v20";
 const assets = [
   "./",
   "./styles.css",
