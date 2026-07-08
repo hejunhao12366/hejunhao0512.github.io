@@ -181,6 +181,14 @@ function renderDebt() {
     { color: "red", value: state.debts.baitiao, path: "debts.baitiao" },
     { color: "blue", value: state.debts.huabei, path: "debts.huabei" },
   ]);
+
+  const totalDebt = state.debts.baitiao + state.debts.huabei;
+  const totalRepaid = Math.max(0, totalDebt - state.monthlyRepay.baitiao - state.monthlyRepay.huabei);
+  const percent = totalDebt > 0 ? Math.min(100, Math.round((totalRepaid / totalDebt) * 100)) : 0;
+  const fill = $("#repayProgressFill");
+  const pct = $("#repayProgressPercent");
+  if (fill) fill.style.width = percent + "%";
+  if (pct) pct.textContent = percent + "%";
 }
 
 function renderMonth() {
@@ -207,12 +215,16 @@ function renderDaily() {
   const totalBalance = getTotalBalance();
   const days = getDivisorDays();
   const divisor = Math.max(1, days);
+  const dailyAmount = totalBalance / divisor;
 
   renderBalanceCards(balanceItems);
   $("#totalBalanceText").textContent = money(totalBalance);
   $("#daysText").textContent = days;
   $("#dailyFormulaText").textContent = `${money(totalBalance)} / ${divisor}`;
-  $("#dailyCanUseText").textContent = money(totalBalance / divisor);
+  $("#dailyCanUseText").textContent = money(dailyAmount);
+
+  const highlight = document.querySelector(".daily-highlight");
+  if (highlight) highlight.classList.toggle("warning", dailyAmount > 0 && dailyAmount < 30);
 
   if (state.mode === "holiday") {
     $("#dailyKicker").textContent = "假期";
@@ -500,8 +512,15 @@ $("#dailyForm").addEventListener("submit", (event) => {
 
 $("#noteForm").addEventListener("submit", (event) => {
   event.preventDefault();
-  const text = $("#noteTextInput").value.trim();
   syncQuickJumpForm();
+  syncCloudForm();
+  saveState();
+  renderAll();
+});
+
+$("#noteForm2").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const text = $("#noteTextInput").value.trim();
   syncCloudForm();
   if (!text) return;
 
