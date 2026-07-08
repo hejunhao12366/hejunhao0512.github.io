@@ -605,7 +605,7 @@ function switchView(viewId) {
 
   document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
   document.querySelector(`[data-view="${viewId}"]`).classList.add("active");
-  window.scrollTo(0, 0);
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 autoSaveFromForm("#debtForm", syncDebtForm);

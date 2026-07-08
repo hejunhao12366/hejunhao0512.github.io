@@ -107,6 +107,7 @@ textarea {
 .time-text {
   color: var(--muted);
   font-size: 13px;
+  display: block;
 }
 
 .section-kicker {
