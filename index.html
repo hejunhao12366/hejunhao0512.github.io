@@ -168,38 +168,53 @@
             <h2>欠款设置</h2>
           </div>
           <form id="debtForm" class="settings-form">
-            <label>
-              白条总欠
-              <input id="baitiaoDebtInput" type="number" min="0" step="0.01" />
-            </label>
-            <label>
-              花呗总欠
-              <input id="huabeiDebtInput" type="number" min="0" step="0.01" />
-            </label>
-            <label>
-              本月白条还款
-              <input id="baitiaoRepayInput" type="number" min="0" step="0.01" />
-            </label>
-            <label>
-              本月花呗还款
-              <input id="huabeiRepayInput" type="number" min="0" step="0.01" />
-            </label>
-            <label>
-              本月生活费
-              <input id="livingFeeInput" type="number" min="0" step="0.01" />
-            </label>
-            <label>
-              突发需分期金额
-              <input id="installmentAmountInput" type="number" min="0" step="0.01" />
-            </label>
-            <label>
-              分期期数
-              <input id="installmentMonthsInput" type="number" min="1" step="1" />
-            </label>
-            <label class="wide">
-              分期说明
-              <textarea id="installmentNoteInput" maxlength="60" placeholder="例如：突发情况时用"></textarea>
-            </label>
+            <fieldset class="form-group">
+              <legend>总欠款</legend>
+              <div class="form-row-pair">
+                <label>
+                  白条
+                  <input id="baitiaoDebtInput" type="number" min="0" step="0.01" />
+                </label>
+                <label>
+                  花呗
+                  <input id="huabeiDebtInput" type="number" min="0" step="0.01" />
+                </label>
+              </div>
+            </fieldset>
+            <fieldset class="form-group">
+              <legend>本月还款</legend>
+              <div class="form-row-pair">
+                <label>
+                  白条还款
+                  <input id="baitiaoRepayInput" type="number" min="0" step="0.01" />
+                </label>
+                <label>
+                  花呗还款
+                  <input id="huabeiRepayInput" type="number" min="0" step="0.01" />
+                </label>
+              </div>
+              <label>
+                本月生活费
+                <input id="livingFeeInput" type="number" min="0" step="0.01" />
+              </label>
+            </fieldset>
+            <fieldset class="form-group">
+              <legend>分期设置</legend>
+              <div class="form-row-pair">
+                <label>
+                  分期金额
+                  <input id="installmentAmountInput" type="number" min="0" step="0.01" />
+                </label>
+                <label>
+                  分期期数
+                  <input id="installmentMonthsInput" type="number" min="1" step="1" />
+                </label>
+              </div>
+              <label class="wide">
+                分期说明
+                <textarea id="installmentNoteInput" maxlength="60" placeholder="例如：突发情况时用"></textarea>
+              </label>
+            </fieldset>
             <button class="primary wide" type="submit">保存欠款</button>
           </form>
         </section>
@@ -209,30 +224,40 @@
             <h2>余额设置</h2>
           </div>
           <form id="dailyForm" class="settings-form">
-            <label>
-              支付宝余额
-              <input id="alipayInput" type="number" min="0" step="0.01" />
-            </label>
-            <label>
-              微信余额
-              <input id="wechatInput" type="number" min="0" step="0.01" />
-            </label>
-            <label>
-              银行卡余额
-              <input id="bankInput" type="number" min="0" step="0.01" />
-            </label>
-            <label>
-              其他余额
-              <input id="otherBalanceInput" type="number" min="0" step="0.01" />
-            </label>
-            <label class="school-only">
-              每月发生活费日
-              <input id="paydayDayInput" type="number" min="1" max="31" step="1" />
-            </label>
-            <label class="holiday-only">
-              假期目标天数
-              <input id="holidayDaysInput" type="number" min="1" step="1" />
-            </label>
+            <fieldset class="form-group">
+              <legend>账户余额</legend>
+              <div class="form-row-pair">
+                <label>
+                  支付宝
+                  <input id="alipayInput" type="number" min="0" step="0.01" />
+                </label>
+                <label>
+                  微信
+                  <input id="wechatInput" type="number" min="0" step="0.01" />
+                </label>
+              </div>
+              <div class="form-row-pair">
+                <label>
+                  银行卡
+                  <input id="bankInput" type="number" min="0" step="0.01" />
+                </label>
+                <label>
+                  其他
+                  <input id="otherBalanceInput" type="number" min="0" step="0.01" />
+                </label>
+              </div>
+            </fieldset>
+            <fieldset class="form-group">
+              <legend>周期设置</legend>
+              <label class="school-only">
+                每月发生活费日
+                <input id="paydayDayInput" type="number" min="1" max="31" step="1" />
+              </label>
+              <label class="holiday-only">
+                假期目标天数
+                <input id="holidayDaysInput" type="number" min="1" step="1" />
+              </label>
+            </fieldset>
             <button class="primary wide" type="submit">保存余额</button>
           </form>
         </section>
@@ -243,14 +268,16 @@
             <button id="resetButton" class="ghost-button danger-button" type="button">加载示例</button>
           </div>
           <form id="noteForm" class="settings-form">
-            <label>
-              快捷按钮文字
-              <input id="quickJumpLabelInput" type="text" maxlength="6" placeholder="支付宝" />
-            </label>
-            <label>
-              快捷跳转链接
-              <input id="quickJumpUrlInput" type="text" placeholder="alipays:// 或 weixin://" />
-            </label>
+            <div class="form-row-pair">
+              <label>
+                按钮文字
+                <input id="quickJumpLabelInput" type="text" maxlength="6" placeholder="支付宝" />
+              </label>
+              <label>
+                跳转链接
+                <input id="quickJumpUrlInput" type="text" placeholder="alipays://" />
+              </label>
+            </div>
           </form>
         </section>
 

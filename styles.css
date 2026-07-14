@@ -524,7 +524,37 @@ h2 {
 .sync-login {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 16px;
+}
+
+.form-group {
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 14px 0 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.form-group:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.form-group legend {
+  color: var(--mint);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 0;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-row-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 label {
