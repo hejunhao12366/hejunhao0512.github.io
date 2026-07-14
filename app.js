@@ -336,48 +336,27 @@ function textSpan(value) {
 }
 
 function renderForms() {
-  $("#baitiaoDebtInput").value = state.debts.baitiao;
-  $("#huabeiDebtInput").value = state.debts.huabei;
-  $("#baitiaoRepayInput").value = state.monthlyRepay.baitiao;
-  $("#huabeiRepayInput").value = state.monthlyRepay.huabei;
-  $("#livingFeeInput").value = state.livingFee;
-  $("#installmentAmountInput").value = state.installmentAmount;
-  $("#installmentMonthsInput").value = state.installmentMonths;
-  $("#installmentNoteInput").value = state.installmentNote;
-
-  $("#alipayInput").value = state.balances.alipay;
-  $("#wechatInput").value = state.balances.wechat;
-  $("#bankInput").value = state.balances.bank;
-  $("#otherBalanceInput").value = state.balances.other;
-  $("#paydayDayInput").value = state.paydayDay;
-  $("#holidayDaysInput").value = state.holidayDays;
-  $("#quickJumpLabelInput").value = state.quickJump.label;
-  $("#quickJumpUrlInput").value = state.quickJump.url;
-  $("#syncTokenInput").value = state.sync.token;
-  $("#syncGistInput").value = state.sync.gistId;
-  $("#noteDateInput").value ||= new Date().toISOString().slice(0, 10);
+  const set = (sel, val) => { const el = $(sel); if (el) el.value = val; };
+  set("#installmentAmountInput", state.installmentAmount);
+  set("#installmentMonthsInput", state.installmentMonths);
+  set("#installmentNoteInput", state.installmentNote);
+  set("#paydayDayInput", state.paydayDay);
+  set("#holidayDaysInput", state.holidayDays);
+  set("#quickJumpLabelInput", state.quickJump.label);
+  set("#quickJumpUrlInput", state.quickJump.url);
+  set("#syncTokenInput", state.sync.token);
+  set("#syncGistInput", state.sync.gistId);
+  set("#noteDateInput", $("#noteDateInput")?.value || new Date().toISOString().slice(0, 10));
 }
 
 function syncDebtForm({ remember = true } = {}) {
   if (remember) rememberState();
-  state.debts.baitiao = Number($("#baitiaoDebtInput").value || 0);
-  state.debts.huabei = Number($("#huabeiDebtInput").value || 0);
-  state.monthlyRepay.baitiao = Number($("#baitiaoRepayInput").value || 0);
-  state.monthlyRepay.huabei = Number($("#huabeiRepayInput").value || 0);
-  state.livingFee = Number($("#livingFeeInput").value || 0);
-  state.installmentAmount = Number($("#installmentAmountInput").value || 0);
-  state.installmentMonths = Math.max(1, Number($("#installmentMonthsInput").value || 1));
-  state.installmentNote = $("#installmentNoteInput").value.trim();
-}
-
-function syncDailyForm({ remember = true } = {}) {
-  if (remember) rememberState();
-  state.balances.alipay = Number($("#alipayInput").value || 0);
-  state.balances.wechat = Number($("#wechatInput").value || 0);
-  state.balances.bank = Number($("#bankInput").value || 0);
-  state.balances.other = Number($("#otherBalanceInput").value || 0);
-  state.paydayDay = clampPayday($("#paydayDayInput").value);
-  state.holidayDays = Math.max(1, Math.round(Number($("#holidayDaysInput").value || 30)));
+  const num = (sel) => Number($(sel)?.value || 0);
+  state.installmentAmount = num("#installmentAmountInput");
+  state.installmentMonths = Math.max(1, num("#installmentMonthsInput") || 1);
+  state.installmentNote = $("#installmentNoteInput")?.value.trim() || "";
+  state.paydayDay = clampPayday($("#paydayDayInput")?.value);
+  state.holidayDays = Math.max(1, Math.round(Number($("#holidayDaysInput")?.value || 30)));
 }
 
 function syncQuickJumpForm({ remember = true } = {}) {
@@ -652,13 +631,6 @@ $("#debtForm").addEventListener("submit", (event) => {
   renderAll();
 });
 
-$("#dailyForm").addEventListener("submit", (event) => {
-  event.preventDefault();
-  syncDailyForm();
-  saveState();
-  renderAll();
-});
-
 $("#noteForm").addEventListener("submit", (event) => {
   event.preventDefault();
   syncQuickJumpForm();
@@ -778,7 +750,6 @@ function switchView(viewId) {
 }
 
 autoSaveFromForm("#debtForm", syncDebtForm);
-autoSaveFromForm("#dailyForm", syncDailyForm);
 
 $("#noteForm").addEventListener("input", (event) => {
   if (!event.target.matches("#quickJumpLabelInput, #quickJumpUrlInput")) return;
