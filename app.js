@@ -438,7 +438,9 @@ function renderDailyRecords() {
 
   recordsList.innerHTML = "";
   if (!records.length) {
-    recordsList.innerHTML = `<div class="empty-state">在计算界面点“保存今日记录”，这里会保留每天的总可用余额。</div>`;
+    recordsList.innerHTML = `<div class="empty-state">在计算界面点"保存今日记录"，这里会保留每天的总可用余额。</div>`;
+    renderTrendChart([]);
+    renderMonthlyReport([]);
     return;
   }
 
@@ -466,6 +468,9 @@ function renderDailyRecords() {
     `;
     recordsList.append(card);
   });
+
+  renderTrendChart(records);
+  renderMonthlyReport(records);
 }
 
 function renderSyncSettings() {
@@ -494,6 +499,150 @@ function escapeHtml(value) {
     '"': "&quot;",
     "'": "&#039;",
   })[char]);
+}
+
+// ── P2: Trend chart (pure SVG, zero dependencies) ──
+function renderTrendChart(records) {
+  const container = $("#trendChart");
+  if (!container) return;
+
+  // records are sorted desc; we need asc for the chart
+  const sorted = records.slice().sort((a, b) => a.date.localeCompare(b.date));
+
+  if (sorted.length < 2) {
+    container.innerHTML = `<div class="trend-empty">保存 2 条以上记录即可显示余额走势</div>`;
+    return;
+  }
+
+  const W = 320;
+  const H = 140;
+  const PAD_L = 44;
+  const PAD_R = 12;
+  const PAD_T = 12;
+  const PAD_B = 24;
+  const plotW = W - PAD_L - PAD_R;
+  const plotH = H - PAD_T - PAD_B;
+
+  const values = sorted.map((r) => r.totalBalance);
+  const minV = Math.min(...values, 0);
+  const maxV = Math.max(...values, 1);
+  const range = maxV - minV || 1;
+
+  const n = sorted.length;
+  const xStep = n > 1 ? plotW / (n - 1) : 0;
+  const points = sorted.map((r, i) => {
+    const x = PAD_L + i * xStep;
+    const y = PAD_T + plotH - ((r.totalBalance - minV) / range) * plotH;
+    return { x, y, date: r.date, value: r.totalBalance };
+  });
+
+  // Smooth path with simple line (mobile readability)
+  const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+  const areaPath = linePath + ` L ${points[n - 1].x.toFixed(1)} ${PAD_T + plotH} L ${points[0].x.toFixed(1)} ${PAD_T + plotH} Z`;
+
+  // Grid lines (4 horizontal)
+  const gridLines = [];
+  for (let g = 0; g <= 3; g++) {
+    const y = PAD_T + (plotH / 3) * g;
+    const val = maxV - (range / 3) * g;
+    gridLines.push({ y, label: money(val), val });
+  }
+
+  // X-axis labels (first, middle, last)
+  const xLabels = [];
+  if (n <= 4) {
+    points.forEach((p) => {
+      const [, , d] = p.date.split("-");
+      xLabels.push({ x: p.x, text: String(Number(d)) });
+    });
+  } else {
+    [points[0], points[Math.floor((n - 1) / 2)], points[n - 1]].forEach((p) => {
+      const [, , d] = p.date.split("-");
+      xLabels.push({ x: p.x, text: String(Number(d)) });
+    });
+  }
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<defs><linearGradient id="trendArea" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#61d9bd" stop-opacity="0.3"/>
+    <stop offset="100%" stop-color="#61d9bd" stop-opacity="0.02"/>
+  </linearGradient></defs>`;
+
+  // Grid
+  gridLines.forEach((g) => {
+    svg += `<line x1="${PAD_L}" y1="${g.y.toFixed(1)}" x2="${W - PAD_R}" y2="${g.y.toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
+    svg += `<text class="trend-axis-label" x="${PAD_L - 6}" y="${(g.y + 3).toFixed(1)}" text-anchor="end">${g.label}</text>`;
+  });
+
+  // Area fill
+  svg += `<path d="${areaPath}" fill="url(#trendArea)"/>`;
+  // Line
+  svg += `<path d="${linePath}" fill="none" stroke="#61d9bd" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  // Dots
+  points.forEach((p) => {
+    svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="#61d9bd"/>`;
+  });
+
+  // X-axis labels
+  xLabels.forEach((l) => {
+    svg += `<text class="trend-axis-label" x="${l.x.toFixed(1)}" y="${H - 6}" text-anchor="middle">${l.text}</text>`;
+  });
+
+  svg += `</svg>`;
+  container.innerHTML = svg;
+}
+
+// ── P2: Monthly report ──
+function renderMonthlyReport(records) {
+  const container = $("#monthlyReport");
+  const label = $("#reportMonthLabel");
+  if (!container) return;
+
+  const now = new Date();
+  const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  const monthRecords = records.filter((r) => r.date.startsWith(yearMonth));
+
+  if (label) {
+    const [, m] = yearMonth.split("-");
+    label.textContent = `${Number(m)}月`;
+  }
+
+  if (!monthRecords.length) {
+    container.innerHTML = `<div class="trend-empty">本月还没有记录</div>`;
+    return;
+  }
+
+  const dailyAmounts = monthRecords.map((r) => r.dailyCanUse);
+  const totalBalances = monthRecords.map((r) => r.totalBalance);
+  const avgDaily = dailyAmounts.reduce((s, v) => s + v, 0) / dailyAmounts.length;
+  const maxBalance = Math.max(...totalBalances);
+  const minBalance = Math.min(...totalBalances);
+  const firstBalance = monthRecords.slice().sort((a, b) => a.date.localeCompare(b.date))[0].totalBalance;
+  const lastBalance = monthRecords.slice().sort((a, b) => b.date.localeCompare(a.date))[0].totalBalance;
+  const change = lastBalance - firstBalance;
+
+  container.innerHTML = `
+    <div class="report-grid">
+      <div class="report-item">
+        <div class="report-item-label">本月记录</div>
+        <div class="report-item-value mint">${monthRecords.length}<span style="font-size:14px;color:var(--muted)"> 条</span></div>
+      </div>
+      <div class="report-item">
+        <div class="report-item-label">平均每天可用</div>
+        <div class="report-item-value blue">${money(avgDaily)}</div>
+      </div>
+      <div class="report-item">
+        <div class="report-item-label">余额变化</div>
+        <div class="report-item-value ${change >= 0 ? "mint" : "red"}">${change >= 0 ? "+" : ""}${money(change)}</div>
+        <div class="report-item-sub">${money(firstBalance)} → ${money(lastBalance)}</div>
+      </div>
+      <div class="report-item">
+        <div class="report-item-label">最高 / 最低</div>
+        <div class="report-item-value yellow">${money(maxBalance)}<span style="font-size:14px;color:var(--muted)"> / ${money(minBalance)}</span></div>
+      </div>
+    </div>
+  `;
 }
 
 $("#debtForm").addEventListener("submit", (event) => {

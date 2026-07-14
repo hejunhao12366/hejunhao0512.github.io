@@ -740,6 +740,87 @@ textarea {
   color: var(--muted);
 }
 
+/* ── P2: Trend chart ── */
+.trend-chart-container {
+  margin-top: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.trend-chart-container svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 280px;
+}
+
+.trend-chart-container::-webkit-scrollbar {
+  display: none;
+}
+
+.trend-empty {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 28px 0;
+}
+
+.trend-axis-label {
+  fill: var(--muted);
+  font-size: 10px;
+}
+
+/* ── P2: Monthly report ── */
+.report-month-label {
+  color: var(--mint);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.monthly-report {
+  margin-top: 8px;
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.report-item {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.report-item-label {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.report-item-value {
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.report-item-value.mint { color: var(--mint); }
+.report-item-value.red { color: var(--red); }
+.report-item-value.yellow { color: var(--yellow); }
+.report-item-value.blue { color: var(--blue); }
+
+.report-item-sub {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+@media (max-width: 360px) {
+  .report-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .bottom-nav {
   position: fixed;
   left: 50%;
