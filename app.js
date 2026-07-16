@@ -740,11 +740,6 @@ function switchView(viewId) {
   const next = document.getElementById(viewId);
   if (next === current || !next) return;
 
-  // Scroll to top instantly BEFORE switching — avoids smooth-scroll
-  // jitter when page height changes mid-animation
-  window.scrollTo(0, 0);
-
-  // Activate next BEFORE deactivating current → always one view in flow
   next.classList.add("active");
   current?.classList.remove("active");
 

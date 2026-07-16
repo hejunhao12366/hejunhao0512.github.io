@@ -1067,12 +1067,4 @@ body[data-mode="holiday"] .school-only { display: none; }
   }
 }
 
-/* ── Smooth view entry ── */
-.app-view.active {
-  animation: viewFadeIn 0.3s var(--ease-out);
-}
 
-@keyframes viewFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
