@@ -155,8 +155,20 @@ textarea {
     max(140px, calc(env(safe-area-inset-bottom) + 110px));
 }
 
-.app-view { display: none; }
-.app-view.active { display: block; }
+.app-view {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.app-view.active {
+  max-height: none;
+  overflow: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
 
 /* ============================================================
    Topbar
