@@ -155,20 +155,8 @@ textarea {
     max(140px, calc(env(safe-area-inset-bottom) + 110px));
 }
 
-.app-view {
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
-.app-view.active {
-  max-height: none;
-  overflow: visible;
-  opacity: 1;
-  pointer-events: auto;
-}
+.app-view { display: none; }
+.app-view.active { display: block; }
 
 /* ============================================================
    Topbar
@@ -692,14 +680,11 @@ label {
   font-weight: 500;
 }
 
-/* ── Form groups (fieldset) ── */
-.form-group,
-fieldset {
-  border: none;
+/* ── Form groups ── */
+.form-group {
   border-top: 1px solid var(--divider);
   padding: 14px 0 0;
   margin: 0;
-  min-width: 0;
   display: grid;
   gap: 10px;
 }
@@ -709,17 +694,14 @@ fieldset {
   padding-top: 0;
 }
 
-.form-group legend,
-legend {
+.form-group-legend {
   color: var(--mint);
   font-size: 11px;
   font-weight: 700;
   padding: 0;
   margin: 0 0 2px;
-  width: 100%;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  box-sizing: border-box;
 }
 
 .form-row-pair {
