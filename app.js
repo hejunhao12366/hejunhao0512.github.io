@@ -440,11 +440,15 @@ function renderDailyRecords() {
   records.forEach((record) => {
     const card = document.createElement("article");
     card.className = "record-card";
+    const modeTag = record.mode === "holiday"
+      ? '<span class="tag yellow">假期</span>'
+      : '<span class="tag blue">在校</span>';
+    const subText = record.mode === "holiday" ? "假期剩余" : "距发生活费";
     card.innerHTML = `
       <div class="record-head">
         <div>
-          <div class="record-date">${formatRecordDate(record.date)}</div>
-          <div class="record-sub">${record.daysUntilLivingFee} 天，每天可用</div>
+          <div class="record-date">${formatRecordDate(record.date)} ${modeTag}</div>
+          <div class="record-sub">${subText} ${record.daysUntilLivingFee} 天，每天可用</div>
         </div>
         <button class="delete-record" type="button" aria-label="删除记录" data-id="${record.id}">×</button>
       </div>
@@ -689,6 +693,7 @@ $("#saveDailyRecordButton").addEventListener("click", () => {
   const record = {
     id: createId(),
     date: today,
+    mode: state.mode,
     totalBalance,
     daysUntilLivingFee: days,
     dailyCanUse: totalBalance / divisor,
