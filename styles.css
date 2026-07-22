@@ -59,8 +59,13 @@
 }
 
 html {
+  overflow-x: hidden;
   overflow-y: scroll;
   -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: hidden;
 }
 
 * {
@@ -1008,17 +1013,6 @@ body[data-mode="holiday"] .school-only { display: none; }
 /* ============================================================
    Responsive
    ============================================================ */
-@media (min-width: 430px) {
-  .settings-form,
-  .sync-login {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .sync-actions {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 360px) {
   .app-shell {
     padding-inline: 12px;
