@@ -25,6 +25,7 @@ const sampleState = {
   },
   paydayDay: 12,
   holidayDays: 30,
+  holidayStartDate: "",
   quickJump: {
     label: "支付宝",
     url: "alipays://",
@@ -117,6 +118,7 @@ function normalizeState(nextState) {
     },
     paydayDay: clampPayday(nextState.paydayDay || nextState.daysUntilLivingFee || 1),
     holidayDays: Math.max(1, Math.round(Number(nextState.holidayDays) || 30)),
+    holidayStartDate: String(nextState.holidayStartDate || ""),
     quickJump: {
       label: String(nextState.quickJump?.label || "支付宝"),
       url: String(nextState.quickJump?.url || "alipays://"),
@@ -238,7 +240,15 @@ function renderDaily() {
 }
 
 function getDivisorDays() {
-  return state.mode === "holiday" ? state.holidayDays : getDaysUntilLivingFee();
+  if (state.mode === "holiday") {
+    if (!state.holidayStartDate) return state.holidayDays;
+    const start = new Date(state.holidayStartDate + "T00:00:00");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const elapsed = Math.floor((today - start) / 86400000);
+    return Math.max(0, state.holidayDays - elapsed);
+  }
+  return getDaysUntilLivingFee();
 }
 
 function renderQuickJump() {
@@ -356,7 +366,11 @@ function syncDebtForm({ remember = true } = {}) {
   state.installmentMonths = Math.max(1, num("#installmentMonthsInput") || 1);
   state.installmentNote = $("#installmentNoteInput")?.value.trim() || "";
   state.paydayDay = clampPayday($("#paydayDayInput")?.value);
-  state.holidayDays = Math.max(1, Math.round(Number($("#holidayDaysInput")?.value || 30)));
+  const newHolidayDays = Math.max(1, Math.round(Number($("#holidayDaysInput")?.value || 30)));
+  if (newHolidayDays !== state.holidayDays) {
+    state.holidayStartDate = new Date().toISOString().slice(0, 10);
+  }
+  state.holidayDays = newHolidayDays;
 }
 
 function syncQuickJumpForm({ remember = true } = {}) {
@@ -730,6 +744,9 @@ document.querySelectorAll(".mode-opt").forEach((button) => {
     if (state.mode === button.dataset.mode) return;
     rememberState();
     state.mode = button.dataset.mode;
+    if (state.mode === "holiday" && !state.holidayStartDate) {
+      state.holidayStartDate = new Date().toISOString().slice(0, 10);
+    }
     saveState();
     renderAll();
   });
