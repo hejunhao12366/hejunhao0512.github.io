@@ -200,10 +200,23 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tool-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.tool-button:active {
+  transform: scale(0.92);
 }
 
 .tool-button:disabled {
   opacity: 0.3;
+  cursor: default;
+  transform: none;
 }
 
 .time-text {
