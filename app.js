@@ -437,33 +437,70 @@ function renderDailyRecords() {
     return;
   }
 
-  records.forEach((record) => {
-    const card = document.createElement("article");
-    card.className = "record-card";
-    const modeTag = record.mode === "holiday"
-      ? '<span class="tag yellow">假期</span>'
-      : '<span class="tag blue">在校</span>';
-    const subText = record.mode === "holiday" ? "假期剩余" : "距发生活费";
-    card.innerHTML = `
-      <div class="record-head">
-        <div>
-          <div class="record-date">${formatRecordDate(record.date)} ${modeTag}</div>
-          <div class="record-sub">${subText} ${record.daysUntilLivingFee} 天，每天可用</div>
-        </div>
-        <button class="delete-record" type="button" aria-label="删除记录" data-id="${record.id}">×</button>
-      </div>
-      <div class="record-main">
-        <span class="tag mint">${money(record.dailyCanUse)}</span>
-        <span class="record-formula">${money(record.totalBalance)} / ${record.daysUntilLivingFee}</span>
-      </div>
-      <div class="record-grid">
-        <span>支付宝 ${money(record.balances.alipay)}</span>
-        <span>微信 ${money(record.balances.wechat)}</span>
-        <span>银行卡 ${money(record.balances.bank)}</span>
-        <span>其他 ${money(record.balances.other)}</span>
-      </div>
+  // Group by month (YYYY-MM)
+  const groups = {};
+  records.forEach((r) => {
+    const ym = r.date.slice(0, 7);
+    if (!groups[ym]) groups[ym] = [];
+    groups[ym].push(r);
+  });
+
+  // Render each month group as a collapsible section
+  const sortedMonths = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+  sortedMonths.forEach((ym) => {
+    const monthRecords = groups[ym];
+    const [, m] = ym.split("-");
+    const monthLabel = `${Number(m)}月`;
+
+    const group = document.createElement("div");
+    group.className = "record-month-group";
+    group.innerHTML = `
+      <button class="record-month-header" type="button" data-month="${ym}">
+        <span class="record-month-title">${ym.slice(0,4)}年${monthLabel}</span>
+        <span class="record-month-count">${monthRecords.length} 条</span>
+        <span class="record-month-arrow">▾</span>
+      </button>
+      <div class="record-month-body"></div>
     `;
-    recordsList.append(card);
+
+    const body = group.querySelector(".record-month-body");
+    monthRecords.forEach((record) => {
+      const card = document.createElement("article");
+      card.className = "record-card";
+      const modeTag = record.mode === "holiday"
+        ? '<span class="tag yellow">假期</span>'
+        : '<span class="tag blue">在校</span>';
+      const subText = record.mode === "holiday" ? "假期剩余" : "距发生活费";
+      card.innerHTML = `
+        <div class="record-head">
+          <div>
+            <div class="record-date">${formatRecordDate(record.date)} ${modeTag}</div>
+            <div class="record-sub">${subText} ${record.daysUntilLivingFee} 天，每天可用</div>
+          </div>
+          <button class="delete-record" type="button" aria-label="删除记录" data-id="${record.id}">×</button>
+        </div>
+        <div class="record-main">
+          <span class="tag mint">${money(record.dailyCanUse)}</span>
+          <span class="record-formula">${money(record.totalBalance)} / ${record.daysUntilLivingFee}</span>
+        </div>
+        <div class="record-grid">
+          <span>支付宝 ${money(record.balances.alipay)}</span>
+          <span>微信 ${money(record.balances.wechat)}</span>
+          <span>银行卡 ${money(record.balances.bank)}</span>
+          <span>其他 ${money(record.balances.other)}</span>
+        </div>
+      `;
+      body.append(card);
+    });
+
+    // Collapse by default (except current month)
+    const nowYM = new Date().toISOString().slice(0, 7);
+    if (ym !== nowYM) {
+      group.querySelector(".record-month-body").style.display = "none";
+      group.querySelector(".record-month-arrow").textContent = "▸";
+    }
+
+    recordsList.append(group);
   });
 
   renderTrendChart(records);
@@ -714,6 +751,18 @@ $("#saveDailyRecordButton").addEventListener("click", () => {
 });
 
 $("#dailyRecordsList").addEventListener("click", (event) => {
+  // Toggle month group
+  const header = event.target.closest(".record-month-header");
+  if (header) {
+    const body = header.nextElementSibling;
+    const arrow = header.querySelector(".record-month-arrow");
+    const isHidden = body.style.display === "none";
+    body.style.display = isHidden ? "" : "none";
+    arrow.textContent = isHidden ? "▾" : "▸";
+    return;
+  }
+
+  // Delete record
   const button = event.target.closest(".delete-record");
   if (!button) return;
 

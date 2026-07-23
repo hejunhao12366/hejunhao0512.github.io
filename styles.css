@@ -789,6 +789,46 @@ label {
   gap: 10px;
 }
 
+/* ── Month group (collapsible) ── */
+.record-month-group {
+  margin-bottom: 4px;
+}
+
+.record-month-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: rgba(0, 0, 0, 0.25);
+  margin-bottom: 8px;
+}
+
+.record-month-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.record-month-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.record-month-arrow {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Cards inside a month group nest with a left margin for hierarchy */
+.record-month-body > .record-card {
+  margin-left: 2px;
+}
+
 .record-date {
   font-size: 18px;
   font-weight: 700;
