@@ -179,44 +179,57 @@ textarea {
   flex-direction: column;
   gap: 5px;
 }
-
-.top-actions {
-  display: flex;
+/* ── Undo/Redo Segmented Control ── */
+.undo-redo-group {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-}
-
-.tool-button {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--r-full);
   background: var(--card);
   border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  padding: 3px;
+  gap: 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  color: var(--text-2);
-  font-size: 19px;
-  line-height: 1;
+}
+
+.ur-btn {
+  width: 38px;
+  height: 38px;
+  border: none;
+  background: transparent;
+  border-radius: var(--r-full);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  color: var(--muted);
+  opacity: 0.35;
+  transition: color 0.15s ease, opacity 0.15s ease, transform 0.12s ease;
 }
 
-.tool-button:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
+.ur-btn:not(:disabled) {
+  color: var(--text);
+  opacity: 1;
 }
 
-.tool-button:active {
-  transform: scale(0.92);
+.ur-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.tool-button:disabled {
-  opacity: 0.3;
+.ur-btn:active:not(:disabled) {
+  transform: scale(0.88);
+}
+
+.ur-btn:disabled {
   cursor: default;
-  transform: none;
+}
+
+.ur-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--divider);
+  flex-shrink: 0;
 }
 
 .time-text {
