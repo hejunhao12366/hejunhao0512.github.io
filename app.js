@@ -26,10 +26,6 @@ const sampleState = {
   paydayDay: 12,
   holidayDays: 30,
   holidayStartDate: "",
-  quickJump: {
-    label: "支付宝",
-    url: "alipays://",
-  },
   sync: {
     token: "",
     gistId: "",
@@ -119,10 +115,6 @@ function normalizeState(nextState) {
     paydayDay: clampPayday(nextState.paydayDay || nextState.daysUntilLivingFee || 1),
     holidayDays: Math.max(1, Math.round(Number(nextState.holidayDays) || 30)),
     holidayStartDate: String(nextState.holidayStartDate || ""),
-    quickJump: {
-      label: String(nextState.quickJump?.label || "支付宝"),
-      url: String(nextState.quickJump?.url || "alipays://"),
-    },
     sync: {
       token: String(nextState.sync?.token || ""),
       gistId: String(nextState.sync?.gistId || ""),
@@ -670,13 +662,6 @@ function renderMonthlyReport(records) {
 $("#debtForm").addEventListener("submit", (event) => {
   event.preventDefault();
   syncDebtForm();
-  saveState();
-  renderAll();
-});
-
-$("#noteForm").addEventListener("submit", (event) => {
-  event.preventDefault();
-  syncCloudForm();
   saveState();
   renderAll();
 });
