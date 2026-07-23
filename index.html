@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=43" />
+    <link rel="stylesheet" href="./styles.css?v=44" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
@@ -248,15 +248,17 @@
       </nav>
     </main>
 
-    <script src="./app.js?v=43"></script>
+    <script src="./app.js?v=44"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first
         navigator.serviceWorker.getRegistrations().then((regs) => {
           regs.forEach((r) => r.unregister());
         });
-        // Register fresh
-        navigator.serviceWorker.register("./service-worker.js?v=43", { updateViaCache: "none" }).then((reg) => {
+        // Register SW (original path for update detection)
+        navigator.serviceWorker.register("./service-worker.js", { updateViaCache: "none" }).then((reg) => {
+          // Force immediate update check
+          reg.update();
           reg.addEventListener("updatefound", () => {
             const sw = reg.installing;
             sw.addEventListener("statechange", () => {
