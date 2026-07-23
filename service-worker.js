@@ -1,7 +1,7 @@
 const cacheName = "mobile-ledger-v43";
 const assets = [
   "./",
-  "./styles.css",
+  "./styles.css?v=43",
   "./app.js",
   "./manifest.webmanifest",
   "./icon.svg",
@@ -16,7 +16,9 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((key) => key !== cacheName).map((key) => caches.delete(key)))
-    )
+    ).then(() => self.clients.matchAll().then((clients) => {
+      clients.forEach((client) => client.navigate(client.url));
+    }))
   );
   self.clients.claim();
 });
