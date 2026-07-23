@@ -240,23 +240,6 @@ textarea {
   color: var(--mint);
 }
 
-/* ── Quick jump button ── */
-.quick-jump {
-  max-width: 88px;
-  min-height: 42px;
-  padding: 8px 14px;
-  border-radius: var(--r-full);
-  background: var(--mint);
-  color: #051210;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  box-shadow: 0 4px 16px rgba(94, 234, 212, 0.25);
-}
-
 /* ============================================================
    Cards — glassmorphism
    ============================================================ */

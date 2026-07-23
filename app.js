@@ -155,7 +155,6 @@ function renderClock() {
 
 function renderAll() {
   renderClock();
-  renderQuickJump();
   renderSyncSettings();
   renderMode();
   renderDashboard();
@@ -254,12 +253,6 @@ function getDivisorDays() {
   return getDaysUntilLivingFee();
 }
 
-function renderQuickJump() {
-  const button = $("#quickJumpButton");
-  if (!button) return;
-  button.textContent = state.quickJump.label || "快捷";
-}
-
 function getDaysUntilLivingFee() {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -355,8 +348,6 @@ function renderForms() {
   set("#installmentNoteInput", state.installmentNote);
   set("#paydayDayInput", state.paydayDay);
   set("#holidayDaysInput", state.holidayDays);
-  set("#quickJumpLabelInput", state.quickJump.label);
-  set("#quickJumpUrlInput", state.quickJump.url);
   set("#syncTokenInput", state.sync.token);
   set("#syncGistInput", state.sync.gistId);
   set("#noteDateInput", $("#noteDateInput")?.value || new Date().toISOString().slice(0, 10));
@@ -374,12 +365,6 @@ function syncDebtForm({ remember = true } = {}) {
     state.holidayStartDate = new Date().toISOString().slice(0, 10);
   }
   state.holidayDays = newHolidayDays;
-}
-
-function syncQuickJumpForm({ remember = true } = {}) {
-  if (remember) rememberState();
-  state.quickJump.label = $("#quickJumpLabelInput").value.trim() || "快捷";
-  state.quickJump.url = $("#quickJumpUrlInput").value.trim();
 }
 
 function syncCloudForm({ remember = true } = {}) {
@@ -691,7 +676,6 @@ $("#debtForm").addEventListener("submit", (event) => {
 
 $("#noteForm").addEventListener("submit", (event) => {
   event.preventDefault();
-  syncQuickJumpForm();
   syncCloudForm();
   saveState();
   renderAll();
@@ -783,15 +767,6 @@ $("#clearRecordsButton").addEventListener("click", () => {
   renderDailyRecords();
 });
 
-$("#resetButton").addEventListener("click", () => {
-  if (!window.confirm("加载示例会替换当前数据。已支持撤销，但建议确认后再继续。")) return;
-  rememberState();
-  localStorage.setItem(`${storeKey}-before-sample`, JSON.stringify(state));
-  state = clone(sampleState);
-  saveState();
-  renderAll();
-});
-
 document.querySelectorAll(".nav-item").forEach((button) => {
   button.addEventListener("click", () => switchView(button.dataset.view));
 });
@@ -823,13 +798,6 @@ function switchView(viewId) {
 
 autoSaveFromForm("#debtForm", syncDebtForm);
 
-$("#noteForm").addEventListener("input", (event) => {
-  if (!event.target.matches("#quickJumpLabelInput, #quickJumpUrlInput")) return;
-  syncQuickJumpForm({ remember: false });
-  saveState({ upload: false, touch: false });
-  renderQuickJump();
-});
-
 ["#syncTokenInput", "#syncGistInput"].forEach((selector) => {
   $(selector).addEventListener("input", () => {
     window.clearTimeout(syncFieldTimer);
@@ -856,15 +824,6 @@ $("#installmentNote").addEventListener("click", () => {
   state.installmentNote = nextNote.trim();
   saveState();
   renderAll();
-});
-
-$("#quickJumpButton").addEventListener("click", () => {
-  if (!state.quickJump.url) {
-    switchView("settingsView");
-    $("#quickJumpUrlInput").focus();
-    return;
-  }
-  window.location.href = state.quickJump.url;
 });
 
 $("#createCloudButton").addEventListener("click", async () => {
