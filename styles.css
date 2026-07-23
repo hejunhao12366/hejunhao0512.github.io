@@ -374,13 +374,58 @@ h2 {
 }
 
 /* ── Days row ── */
-.daily-days-row {
-  margin: 8px 0 10px;
-  justify-content: center !important;
-  font-size: 15px !important;
-  background: transparent !important;
-  padding: 4px 0 !important;
+/* ── Countdown card (prominent) ── */
+.countdown-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 14px 0;
+  padding: 16px 20px;
+  border-radius: var(--r-md);
+  background: linear-gradient(135deg, rgba(94, 234, 212, 0.12), rgba(94, 234, 212, 0.04));
+  border: 1px solid rgba(94, 234, 212, 0.25);
 }
+
+.countdown-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+}
+
+.countdown-number-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.countdown-number {
+  font-size: 48px;
+  font-weight: 200;
+  line-height: 1;
+  color: var(--mint);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -1px;
+}
+
+.countdown-unit {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--mint);
+  opacity: 0.7;
+}
+
+/* Warning state when days <= 3 */
+.countdown-card.urgent {
+  border-color: rgba(251, 146, 60, 0.4);
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.12), rgba(251, 146, 60, 0.04));
+}
+.countdown-card.urgent .countdown-number,
+.countdown-card.urgent .countdown-unit {
+  color: #fb923c;
+}
+
 
 /* ── Balance cards ── */
 .balance-cards {

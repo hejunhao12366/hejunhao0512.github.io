@@ -231,12 +231,15 @@ function renderDaily() {
   if (state.mode === "holiday") {
     $("#dailyKicker").textContent = "假期";
     $("#dailyTitle").textContent = "每天可用";
-    $("#daysLabel").textContent = "假期剩余：";
+    $("#daysLabel").textContent = "假期剩余";
   } else {
     $("#dailyKicker").textContent = "今天";
     $("#dailyTitle").textContent = "每天可用";
-    $("#daysLabel").textContent = "距发生活费：";
+    $("#daysLabel").textContent = "距发生活费";
   }
+
+  const countdownCard = document.getElementById("countdownCard");
+  if (countdownCard) countdownCard.classList.toggle("urgent", days <= 3);
 }
 
 function getDivisorDays() {
