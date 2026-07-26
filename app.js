@@ -753,7 +753,13 @@ $("#clearRecordsButton").addEventListener("click", () => {
 });
 
 document.querySelectorAll(".nav-item").forEach((button) => {
-  button.addEventListener("click", () => switchView(button.dataset.view));
+  button.addEventListener("click", () => {
+    switchView(button.dataset.view);
+    // 切换到绘图视图时初始化
+    if (button.dataset.view === "drawingView") {
+      setTimeout(() => initDrawing(), 100);
+    }
+  });
 });
 
 document.querySelectorAll(".mode-opt").forEach((button) => {

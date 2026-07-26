@@ -65,20 +65,23 @@ class DrawingApp {
     document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
       btn.addEventListener('click', () => {
         this.setTool(btn.dataset.tool);
+        // 更新 UI 状态
+        document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
       });
     });
     
     // 颜色选择器
     const strokeColorPicker = document.getElementById('strokeColorPicker');
     if (strokeColorPicker) {
-      strokeColorPicker.addEventListener('change', (e) => {
+      strokeColorPicker.addEventListener('input', (e) => {
         this.setStrokeColor(e.target.value);
       });
     }
     
     const fillColorPicker = document.getElementById('fillColorPicker');
     if (fillColorPicker) {
-      fillColorPicker.addEventListener('change', (e) => {
+      fillColorPicker.addEventListener('input', (e) => {
         this.setFillColor(e.target.value);
       });
     }
