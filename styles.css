@@ -66,6 +66,9 @@
   border-radius: var(--r-lg);
   margin-bottom: 12px;
   align-items: center;
+  position: relative;
+  z-index: 10;
+  touch-action: auto;
 }
 
 .tool-group {
@@ -86,6 +89,9 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .tool-btn:hover {
