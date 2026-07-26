@@ -49,7 +49,98 @@
   --r-xl: 28px;
   --r-full: 999px;
 
-  /* ── Motion ── */
+  /* ── Drawing module ── */
+  --drawing-toolbar-bg: rgba(22, 26, 36, 0.85);
+  --drawing-tool-btn: rgba(255, 255, 255, 0.08);
+  --drawing-tool-btn-hover: rgba(255, 255, 255, 0.15);
+  --drawing-tool-btn-active: var(--mint);
+}
+
+/* ── Drawing Module ── */
+.drawing-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px;
+  background: var(--drawing-toolbar-bg);
+  border-radius: var(--r-lg);
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+.tool-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.tool-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: var(--r-md);
+  background: var(--drawing-tool-btn);
+  color: var(--text-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.tool-btn:hover {
+  background: var(--drawing-tool-btn-hover);
+  transform: scale(1.05);
+}
+
+.tool-btn.active {
+  background: var(--drawing-tool-btn-active);
+  color: var(--bg);
+  box-shadow: 0 0 12px rgba(94, 234, 212, 0.4);
+}
+
+.tool-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+#strokeColorPicker,
+#fillColorPicker {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  background: transparent;
+}
+
+#strokeWidthSelect {
+  height: 40px;
+  padding: 0 12px;
+  border: none;
+  border-radius: var(--r-md);
+  background: var(--drawing-tool-btn);
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.drawing-canvas-container {
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+#drawingCanvas {
+  display: block;
+  width: 100%;
+  height: calc(100vh - 200px);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* ── Motion ── */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --dur: 0.25s;
