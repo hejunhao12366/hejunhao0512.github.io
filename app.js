@@ -529,17 +529,20 @@ function renderTrendChart(records) {
   }
 
   const W = 320;
-  const H = 140;
-  const PAD_L = 44;
-  const PAD_R = 12;
-  const PAD_T = 12;
-  const PAD_B = 24;
+  const H = 150;
+  const PAD_L = 46;
+  const PAD_R = 14;
+  const PAD_T = 14;
+  const PAD_B = 26;
   const plotW = W - PAD_L - PAD_R;
   const plotH = H - PAD_T - PAD_B;
 
   const values = sorted.map((r) => r.totalBalance);
-  const minV = Math.min(...values, 0);
-  const maxV = Math.max(...values, 1);
+  const dataMin = Math.min(...values);
+  const dataMax = Math.max(...values);
+  // Add 8% padding so line doesn't touch edges
+  const minV = Math.min(dataMin - (dataMax - dataMin) * 0.08, 0);
+  const maxV = dataMax + (dataMax - dataMin) * 0.08 || dataMax + 1;
   const range = maxV - minV || 1;
 
   const n = sorted.length;
@@ -550,9 +553,29 @@ function renderTrendChart(records) {
     return { x, y, date: r.date, value: r.totalBalance };
   });
 
-  // Smooth path with simple line (mobile readability)
-  const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
-  const areaPath = linePath + ` L ${points[n - 1].x.toFixed(1)} ${PAD_T + plotH} L ${points[0].x.toFixed(1)} ${PAD_T + plotH} Z`;
+  // Smooth curve using Catmull-Rom → cubic bezier
+  function smoothPath(pts) {
+    if (pts.length < 2) return "";
+    let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2] || p2;
+      const t = 0.18; // tension: lower = smoother
+      const c1x = p1.x + (p2.x - p0.x) * t;
+      const c1y = p1.y + (p2.y - p0.y) * t;
+      const c2x = p2.x - (p3.x - p1.x) * t;
+      const c2y = p2.y - (p3.y - p1.y) * t;
+      d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+    }
+    return d;
+  }
+
+  const linePath = smoothPath(points);
+  const areaPath = linePath +
+    ` L ${points[n - 1].x.toFixed(1)} ${(PAD_T + plotH).toFixed(1)}` +
+    ` L ${points[0].x.toFixed(1)} ${(PAD_T + plotH).toFixed(1)} Z`;
 
   // Grid lines (4 horizontal)
   const gridLines = [];
@@ -576,26 +599,55 @@ function renderTrendChart(records) {
     });
   }
 
+  // Determine color based on trend (up=mint, down=red, flat=mint)
+  const trend = points[n - 1].value - points[0].value;
+  const lineColor = trend < -0.01 ? "#f87171" : "#5eead4";
+  const glowColor = trend < -0.01 ? "rgba(248,113,113,0.35)" : "rgba(94,234,212,0.35)";
+
   let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
-  svg += `<defs><linearGradient id="trendArea" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0%" stop-color="#61d9bd" stop-opacity="0.3"/>
-    <stop offset="100%" stop-color="#61d9bd" stop-opacity="0.02"/>
-  </linearGradient></defs>`;
+  svg += `<defs>
+    <linearGradient id="trendArea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.28"/>
+      <stop offset="60%" stop-color="${lineColor}" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="trendGlow" x="-20%" y="-50%" width="140%" height="200%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>`;
 
   // Grid
   gridLines.forEach((g) => {
-    svg += `<line x1="${PAD_L}" y1="${g.y.toFixed(1)}" x2="${W - PAD_R}" y2="${g.y.toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
+    svg += `<line x1="${PAD_L}" y1="${g.y.toFixed(1)}" x2="${W - PAD_R}" y2="${g.y.toFixed(1)}" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="2 3"/>`;
     svg += `<text class="trend-axis-label" x="${PAD_L - 6}" y="${(g.y + 3).toFixed(1)}" text-anchor="end">${g.label}</text>`;
   });
 
   // Area fill
   svg += `<path d="${areaPath}" fill="url(#trendArea)"/>`;
-  // Line
-  svg += `<path d="${linePath}" fill="none" stroke="#61d9bd" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
-  // Dots
-  points.forEach((p) => {
-    svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="#61d9bd"/>`;
+
+  // Glow line (behind main line)
+  svg += `<path d="${linePath}" fill="none" stroke="${glowColor}" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" filter="url(#trendGlow)"/>`;
+
+  // Main line with draw-in animation
+  svg += `<path d="${linePath}" fill="none" stroke="${lineColor}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+
+  // Dots with pulse on last point
+  points.forEach((p, i) => {
+    const isLast = i === n - 1;
+    if (isLast) {
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="7" fill="${lineColor}" opacity="0.2"/>`;
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="${lineColor}"/>`;
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2" fill="#08090f"/>`;
+    } else {
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#0e1119" stroke="${lineColor}" stroke-width="2"/>`;
+    }
   });
+
+  // Last value label badge
+  const lastP = points[n - 1];
+  const badgeY = lastP.y < 30 ? lastP.y + 20 : lastP.y - 12;
+  svg += `<text x="${lastP.x.toFixed(1)}" y="${badgeY.toFixed(1)}" text-anchor="middle" fill="${lineColor}" font-size="11" font-weight="700">${money(lastP.value)}</text>`;
 
   // X-axis labels
   xLabels.forEach((l) => {
