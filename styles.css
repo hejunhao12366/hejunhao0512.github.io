@@ -1197,17 +1197,8 @@ label {
    ============================================================ */
 body[data-mode="school"] .holiday-only { display: none; }
 body[data-mode="holiday"] .school-only { display: none; }
-
 /* ============================================================
    Responsive — all fluid, no viewport breakpoints
    (breakpoints cause layout shift on iOS Safari pinch-zoom)
    ============================================================ */
-
-.record-grid {
-  grid-template-columns: 1fr;
-}
-
-.report-grid {
-  grid-template-columns: 1fr;
-}
 
