@@ -54,6 +54,14 @@
   --drawing-tool-btn: rgba(255, 255, 255, 0.08);
   --drawing-tool-btn-hover: rgba(255, 255, 255, 0.15);
   --drawing-tool-btn-active: var(--mint);
+
+  /* ── Motion ── */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --dur: 0.25s;
+
+  /* ── Spacing ── */
+  --gap: 14px;
 }
 
 /* ── Drawing Module ── */
@@ -144,15 +152,6 @@
   height: calc(100vh - 200px);
   cursor: crosshair;
   touch-action: none;
-}
-
-/* ── Motion ── */
-  --ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);
-  --dur: 0.25s;
-
-  /* ── Spacing ── */
-  --gap: 14px;
 }
 
 html {
@@ -1200,48 +1199,15 @@ body[data-mode="school"] .holiday-only { display: none; }
 body[data-mode="holiday"] .school-only { display: none; }
 
 /* ============================================================
-   Responsive
+   Responsive — all fluid, no viewport breakpoints
+   (breakpoints cause layout shift on iOS Safari pinch-zoom)
    ============================================================ */
-@media (max-width: 360px) {
-  .app-shell {
-    padding-inline: 12px;
-  }
 
-  .account-row,
-  .formula-line,
-  .balance-row,
-  .entry-line {
-    font-size: 17px;
-  }
-
-  h1 {
-    font-size: clamp(26px, 8vw, 32px);
-  }
-
-  .tag {
-    min-height: 28px;
-    padding: 0 3px;
-  }
-
-  .balance-cards {
-    grid-template-columns: 1fr;
-  }
-
-  .record-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .report-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .daily-highlight-value {
-    align-items: flex-end;
-  }
-
-  .daily-highlight-number {
-    font-size: clamp(34px, 11vw, 44px);
-  }
+.record-grid {
+  grid-template-columns: 1fr;
 }
 
+.report-grid {
+  grid-template-columns: 1fr;
+}
 
