@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=46" />
+    <link rel="stylesheet" href="./styles.css?v=47" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
@@ -124,6 +124,11 @@
         <section class="app-card trend-card">
           <div class="section-header">
             <h2>余额走势</h2>
+            <div class="trend-month-nav">
+              <button id="trendMonthPrev" class="trend-nav-btn" type="button" aria-label="上个月">‹</button>
+              <span id="trendMonthLabel" class="trend-month-label">—</span>
+              <button id="trendMonthNext" class="trend-nav-btn" type="button" aria-label="下个月">›</button>
+            </div>
           </div>
           <div id="trendChart" class="trend-chart-container"></div>
         </section>
@@ -323,8 +328,8 @@
       </nav>
     </main>
 
-    <script src="./app.js?v=46"></script>
-    <script src="./drawing.js?v=46"></script>
+    <script src="./app.js?v=47"></script>
+    <script src="./drawing.js?v=47"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first

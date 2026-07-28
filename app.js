@@ -44,6 +44,7 @@ let undoStack = [];
 let redoStack = [];
 let syncTimer;
 let syncFieldTimer;
+let trendMonthOffset = 0; // 0 = current month, -1 = last month, etc.
 let applyingCloudState = false;
 
 const $ = (selector) => document.querySelector(selector);
@@ -412,7 +413,7 @@ function renderDailyRecords() {
   recordsList.innerHTML = "";
   if (!records.length) {
     recordsList.innerHTML = `<div class="empty-state">在计算界面点"保存今日记录"，这里会保留每天的总可用余额。</div>`;
-    renderTrendChart([]);
+    renderTrendChartForMonth();
     renderMonthlyReport([]);
     return;
   }
@@ -483,8 +484,46 @@ function renderDailyRecords() {
     recordsList.append(group);
   });
 
-  renderTrendChart(records);
+  renderTrendChartForMonth();
   renderMonthlyReport(records);
+}
+
+// ── Trend chart month filtering ──
+function getTrendMonth() {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() + trendMonthOffset, 1);
+  return { year: d.getFullYear(), month: d.getMonth(), ym: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}` };
+}
+
+function renderTrendChartForMonth() {
+  const tm = getTrendMonth();
+  const allRecords = state.dailyRecords.slice();
+  const monthRecords = allRecords
+    .filter((r) => r.date.startsWith(tm.ym))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // Update label
+  const label = $("#trendMonthLabel");
+  if (label) label.textContent = `${tm.year}年${tm.month + 1}月`;
+
+  // Disable nav at boundaries
+  const oldestYM = allRecords.length ? allRecords.reduce((min, r) => r.date.slice(0, 7) < min ? r.date.slice(0, 7) : min, "9999-99") : tm.ym;
+  const nowYM = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+  const prevBtn = $("#trendMonthPrev");
+  const nextBtn = $("#trendMonthNext");
+  if (prevBtn) prevBtn.disabled = tm.ym <= oldestYM;
+  if (nextBtn) nextBtn.disabled = tm.ym >= nowYM;
+
+  if (monthRecords.length < 2) {
+    // Not enough data for this month — show fallback
+    const container = $("#trendChart");
+    if (container) {
+      container.innerHTML = `<div class="trend-empty">${monthRecords.length === 0 ? "本月无记录" : "本月仅 1 条记录，需 2 条以上"}</div>`;
+    }
+    return;
+  }
+
+  renderTrendChart(monthRecords);
 }
 
 function renderSyncSettings() {
@@ -812,6 +851,16 @@ document.querySelectorAll(".nav-item").forEach((button) => {
       setTimeout(() => initDrawing(), 100);
     }
   });
+});
+
+// ── Trend month navigation ──
+$("#trendMonthPrev")?.addEventListener("click", () => {
+  trendMonthOffset--;
+  renderTrendChartForMonth();
+});
+$("#trendMonthNext")?.addEventListener("click", () => {
+  trendMonthOffset++;
+  renderTrendChartForMonth();
 });
 
 document.querySelectorAll(".mode-opt").forEach((button) => {

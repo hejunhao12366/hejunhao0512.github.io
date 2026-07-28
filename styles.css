@@ -1074,6 +1074,47 @@ label {
   scrollbar-width: none;
 }
 
+.trend-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.trend-nav-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-2);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+
+.trend-nav-btn:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.trend-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.trend-month-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mint);
+  min-width: 64px;
+  text-align: center;
+}
+
 .trend-chart-container svg {
   display: block;
   width: 100%;
