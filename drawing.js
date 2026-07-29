@@ -1,9 +1,7 @@
 /**
- * 绘图模块 - 手绘风格
- * 基于 Canvas API + roughjs (手绘风格库)
+ * 绘图模块 v2 — 手绘风格
+ * Canvas + roughjs，世界坐标系，缩放平移，自由绘制
  */
-
-// 从 CDN 加载 roughjs
 (function loadRoughJS() {
   if (window.rough) return;
   const script = document.createElement('script');
@@ -16,397 +14,679 @@ class DrawingApp {
     this.canvas = document.getElementById(canvasId);
     this.container = document.getElementById(containerId);
     this.ctx = this.canvas.getContext('2d');
-    this.rc = null; // rough canvas
-    
-    // 元素列表
+    this.rc = null;
+
+    // ── 数据 ──
     this.elements = [];
-    this.selectedElement = null;
-    this.currentTool = 'select'; // select, rectangle, circle, arrow, text
-    
-    // 交互状态
-    this.isDrawing = false;
-    this.startX = 0;
-    this.startY = 0;
-    this.offsetX = 0;
-    this.offsetY = 0;
-    
-    // 样式
-    this.strokeColor = '#000000';
+    this.selectedId = null;
+    this.hoverId = null;
+
+    // ── 工具 ──
+    this.currentTool = 'pen'; // pen, rectangle, circle, line, arrow, text, select
+    this.strokeColor = '#5eead4';
     this.fillColor = 'transparent';
     this.strokeWidth = 2;
-    
-    // 持久化
-    this.storageKey = 'drawing-data';
-    
+
+    // ── 视口（世界坐标→屏幕坐标）──
+    this.scale = 1;
+    this.offsetX = 0;
+    this.offsetY = 0;
+    this.showGrid = true;
+
+    // ── 交互状态 ──
+    this.isDrawing = false;
+    this.isDragging = false;
+    this.isPanning = false;
+    this.lastPointer = { x: 0, y: 0 };
+    this.startPos = { x: 0, y: 0 };
+    this.dragOffset = { x: 0, y: 0 };
+    this.currentPath = null; // 自由绘制路径点
+
+    // ── 撤销重做 ──
+    this.undoStack = [];
+    this.redoStack = [];
+
+    this.storageKey = 'drawing-data-v2';
+
     this.init();
   }
-  
+
+  // ──────────────────────────────────────
+  //  初始化
+  // ──────────────────────────────────────
   init() {
-    // 等待 roughjs 加载
     const checkRough = () => {
       if (window.rough) {
         this.rc = window.rough.canvas(this.canvas);
         this.resize();
         this.load();
-        this.render();
         this.bindEvents();
         this.bindToolbarEvents();
+        this.render();
       } else {
         setTimeout(checkRough, 100);
       }
     };
     checkRough();
-    
-    window.addEventListener('resize', () => this.resize());
+    this._resizeHandler = () => this.resize();
+    window.addEventListener('resize', this._resizeHandler);
   }
-  
+
+  destroy() {
+    window.removeEventListener('resize', this._resizeHandler);
+  }
+
+  // ──────────────────────────────────────
+  //  坐标变换
+  // ──────────────────────────────────────
+  screenToWorld(sx, sy) {
+    return {
+      x: (sx - this.offsetX) / this.scale,
+      y: (sy - this.offsetY) / this.scale,
+    };
+  }
+
+  // ──────────────────────────────────────
+  //  Canvas 尺寸
+  // ──────────────────────────────────────
+  resize() {
+    const rect = this.canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    this.canvas.width = rect.width * dpr;
+    this.canvas.height = rect.height * dpr;
+    this.canvas.style.width = rect.width + 'px';
+    this.canvas.style.height = rect.height + 'px';
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.render();
+  }
+
+  // ──────────────────────────────────────
+  //  事件绑定
+  // ──────────────────────────────────────
+  bindEvents() {
+    // 统一指针事件（鼠标+触摸）
+    this.canvas.addEventListener('pointerdown', (e) => this.onPointerDown(e));
+    this.canvas.addEventListener('pointermove', (e) => this.onPointerMove(e));
+    this.canvas.addEventListener('pointerup', (e) => this.onPointerUp(e));
+    this.canvas.addEventListener('pointercancel', (e) => this.onPointerUp(e));
+
+    // 双指缩放
+    this.canvas.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        this.onPinch(e.touches);
+      }
+    }, { passive: false });
+
+    // 滚轮缩放（桌面端）
+    this.canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? 0.9 : 1.1;
+      this.zoomAt(e.clientX, e.clientY, delta);
+    }, { passive: false });
+
+    // 键盘删除
+    this._keyHandler = (e) => {
+      const active = document.getElementById('drawingView');
+      if (!active || !active.classList.contains('active')) return;
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (this.selectedId !== null) {
+          e.preventDefault();
+          this.deleteSelected();
+        }
+      }
+      if (e.ctrlKey && e.key === 'z') { e.preventDefault(); this.undo(); }
+      if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) { e.preventDefault(); this.redo(); }
+    };
+    document.addEventListener('keydown', this._keyHandler);
+  }
+
   bindToolbarEvents() {
-    // 工具按钮
-    document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+    document.querySelectorAll('.tool-btn[data-tool]').forEach((btn) => {
       btn.addEventListener('click', () => {
         this.setTool(btn.dataset.tool);
-        // 更新 UI 状态
-        document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tool-btn[data-tool]').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
       });
     });
-    
-    // 颜色选择器
-    const strokeColorPicker = document.getElementById('strokeColorPicker');
-    if (strokeColorPicker) {
-      strokeColorPicker.addEventListener('input', (e) => {
-        this.setStrokeColor(e.target.value);
-      });
+
+    const scp = document.getElementById('strokeColorPicker');
+    if (scp) scp.addEventListener('input', (e) => { this.strokeColor = e.target.value; });
+
+    const fcp = document.getElementById('fillColorPicker');
+    if (fcp) fcp.addEventListener('input', (e) => { this.fillColor = e.target.value; });
+
+    const sws = document.getElementById('strokeWidthSelect');
+    if (sws) sws.addEventListener('change', (e) => { this.strokeWidth = parseInt(e.target.value); });
+
+    const gridBtn = document.getElementById('toggleGridBtn');
+    if (gridBtn) gridBtn.addEventListener('click', () => {
+      this.showGrid = !this.showGrid;
+      gridBtn.classList.toggle('active', this.showGrid);
+      this.render();
+    });
+
+    const zoomInBtn = document.getElementById('zoomInBtn');
+    if (zoomInBtn) zoomInBtn.addEventListener('click', () => {
+      const r = this.canvas.getBoundingClientRect();
+      this.zoomAt(r.left + r.width / 2, r.top + r.height / 2, 1.2);
+    });
+
+    const zoomOutBtn = document.getElementById('zoomOutBtn');
+    if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => {
+      const r = this.canvas.getBoundingClientRect();
+      this.zoomAt(r.left + r.width / 2, r.top + r.height / 2, 0.8);
+    });
+
+    const undoBtn = document.getElementById('drawUndoBtn');
+    if (undoBtn) undoBtn.addEventListener('click', () => this.undo());
+
+    const redoBtn = document.getElementById('drawRedoBtn');
+    if (redoBtn) redoBtn.addEventListener('click', () => this.redo());
+  }
+
+  // ──────────────────────────────────────
+  //  指针交互
+  // ──────────────────────────────────────
+  getPos(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+
+  onPointerDown(e) {
+    // 双指时不处理单指
+    if (e.pointerType === 'touch' && this._pinching) return;
+
+    this.canvas.setPointerCapture(e.pointerId);
+    const sp = this.getPos(e);
+    this.lastPointer = sp;
+    this.startPos = sp;
+    const wp = this.screenToWorld(sp.x, sp.y);
+
+    // 选择工具时点击空白则进入平移
+    if (this.currentTool === 'select') {
+      const el = this.getElementAt(wp.x, wp.y);
+      if (el) {
+        this.selectedId = el.id;
+        this.isDragging = true;
+        this.dragOffset = { x: wp.x - el.x, y: wp.y - el.y };
+      } else {
+        // 空白区域 → 平移画布
+        this.selectedId = null;
+        this.isPanning = true;
+      }
+      this.render();
+      return;
     }
-    
-    const fillColorPicker = document.getElementById('fillColorPicker');
-    if (fillColorPicker) {
-      fillColorPicker.addEventListener('input', (e) => {
-        this.setFillColor(e.target.value);
-      });
+
+    if (this.currentTool === 'text') {
+      this.createText(wp.x, wp.y);
+      return;
     }
-    
-    // 线条粗细
-    const strokeWidthSelect = document.getElementById('strokeWidthSelect');
-    if (strokeWidthSelect) {
-      strokeWidthSelect.addEventListener('change', (e) => {
-        this.setStrokeWidth(parseInt(e.target.value));
-      });
+
+    // 开始绘制
+    this.isDrawing = true;
+    this.startPos = wp;
+
+    if (this.currentTool === 'pen') {
+      this.currentPath = {
+        id: this._uid(),
+        type: 'pen',
+        points: [{ x: wp.x, y: wp.y }],
+        strokeColor: this.strokeColor,
+        strokeWidth: this.strokeWidth,
+      };
+    } else {
+      // 形状预览
+      this.previewEl = {
+        id: this._uid(),
+        type: this.currentTool,
+        x: wp.x,
+        y: wp.y,
+        width: 0,
+        height: 0,
+        strokeColor: this.strokeColor,
+        fillColor: this.fillColor,
+        strokeWidth: this.strokeWidth,
+      };
     }
   }
-  
-  resize() {
-    const rect = this.container.getBoundingClientRect();
-    this.canvas.width = rect.width;
-    this.canvas.height = rect.height - 60; // 减去工具栏高度
+
+  onPointerMove(e) {
+    const sp = this.getPos(e);
+
+    // 平移画布
+    if (this.isPanning) {
+      this.offsetX += sp.x - this.lastPointer.x;
+      this.offsetY += sp.y - this.lastPointer.y;
+      this.lastPointer = sp;
+      this.render();
+      return;
+    }
+
+    // 拖拽元素
+    if (this.isDragging && this.selectedId !== null) {
+      const wp = this.screenToWorld(sp.x, sp.y);
+      const el = this.getElementById(this.selectedId);
+      if (el) {
+        el.x = wp.x - this.dragOffset.x;
+        el.y = wp.y - this.dragOffset.y;
+        this.render();
+      }
+      return;
+    }
+
+    // 绘制中
+    if (!this.isDrawing) return;
+    const wp = this.screenToWorld(sp.x, sp.y);
+
+    if (this.currentTool === 'pen' && this.currentPath) {
+      const last = this.currentPath.points[this.currentPath.points.length - 1];
+      const dist = Math.hypot(wp.x - last.x, wp.y - last.y);
+      if (dist > 2) this.currentPath.points.push({ x: wp.x, y: wp.y });
+      this.render();
+    } else if (this.previewEl) {
+      this.previewEl.width = wp.x - this.startPos.x;
+      this.previewEl.height = wp.y - this.startPos.y;
+      this.render();
+    }
+  }
+
+  onPointerUp(e) {
+    if (this.isPanning) { this.isPanning = false; return; }
+    if (this.isDragging) { this.isDragging = false; this.save(); return; }
+
+    if (!this.isDrawing) return;
+    this.isDrawing = false;
+
+    if (this.currentTool === 'pen' && this.currentPath) {
+      if (this.currentPath.points.length > 1) {
+        this.pushUndo();
+        this.elements.push(this.currentPath);
+      }
+      this.currentPath = null;
+    } else if (this.previewEl) {
+      if (Math.abs(this.previewEl.width) > 3 || Math.abs(this.previewEl.height) > 3) {
+        this.pushUndo();
+        this.elements.push(this.previewEl);
+      }
+      this.previewEl = null;
+    }
+
+    this.save();
     this.render();
   }
-  
-  bindEvents() {
-    // 鼠标事件
-    this.canvas.addEventListener('mousedown', (e) => this.onPointerDown(e));
-    this.canvas.addEventListener('mousemove', (e) => this.onPointerMove(e));
-    this.canvas.addEventListener('mouseup', (e) => this.onPointerUp(e));
-    
-    // 触摸事件
-    this.canvas.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      this.onPointerDown(touch);
-    });
-    this.canvas.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      this.onPointerMove(touch);
-    });
-    this.canvas.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      this.onPointerUp(e);
-    });
-    
-    // 键盘事件
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        this.deleteSelected();
-      }
-    });
-  }
-  
-  getPointerPos(e) {
+
+  // ──────────────────────────────────────
+  //  双指缩放
+  // ──────────────────────────────────────
+  onPinch(touches) {
     const rect = this.canvas.getBoundingClientRect();
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    };
-  }
-  
-  onPointerDown(e) {
-    const pos = this.getPointerPos(e);
-    this.startX = pos.x;
-    this.startY = pos.y;
-    
-    if (this.currentTool === 'select') {
-      this.selectedElement = this.getElementAt(pos.x, pos.y);
-      if (this.selectedElement) {
-        this.offsetX = pos.x - this.selectedElement.x;
-        this.offsetY = pos.y - this.selectedElement.y;
-        this.isDrawing = true;
-      }
-    } else if (this.currentTool !== 'text') {
-      this.isDrawing = true;
-      this.createElement(pos.x, pos.y);
-    } else {
-      this.createText(pos.x, pos.y);
+    const t1 = { x: touches[0].clientX - rect.left, y: touches[0].clientY - rect.top };
+    const t2 = { x: touches[1].clientX - rect.left, y: touches[1].clientY - rect.top };
+    const dist = Math.hypot(t2.x - t1.x, t2.y - t1.y);
+    const cx = (t1.x + t2.x) / 2;
+    const cy = (t1.y + t2.y) / 2;
+
+    if (this._lastPinchDist) {
+      const ratio = dist / this._lastPinchDist;
+      const screenCX = cx + rect.left;
+      const screenCY = cy + rect.top;
+      this.zoomAt(screenCX, screenCY, ratio);
     }
+    this._lastPinchDist = dist;
+    this._pinching = true;
   }
-  
-  onPointerMove(e) {
-    if (!this.isDrawing) return;
-    
-    const pos = this.getPointerPos(e);
-    
-    if (this.currentTool === 'select' && this.selectedElement) {
-      this.selectedElement.x = pos.x - this.offsetX;
-      this.selectedElement.y = pos.y - this.offsetY;
-      this.render();
-    } else if (this.currentTool !== 'select' && this.currentTool !== 'text') {
-      this.updateElement(pos.x, pos.y);
-      this.render();
-    }
+
+  zoomAt(screenX, screenY, factor) {
+    const rect = this.canvas.getBoundingClientRect();
+    const sx = screenX - rect.left;
+    const sy = screenY - rect.top;
+    const wp = this.screenToWorld(sx, sy);
+    this.scale = Math.max(0.2, Math.min(5, this.scale * factor));
+    // 保持鼠标点在世界坐标不变
+    this.offsetX = sx - wp.x * this.scale;
+    this.offsetY = sy - wp.y * this.scale;
+    this.render();
   }
-  
-  onPointerUp(e) {
-    if (this.isDrawing) {
-      this.isDrawing = false;
-      this.save();
-    }
-  }
-  
-  createElement(x, y) {
-    const element = {
-      id: Date.now(),
-      type: this.currentTool,
-      x: x,
-      y: y,
-      width: 0,
-      height: 0,
-      strokeColor: this.strokeColor,
-      fillColor: this.fillColor,
-      strokeWidth: this.strokeWidth
-    };
-    this.elements.push(element);
-    this.selectedElement = element;
-  }
-  
-  updateElement(x, y) {
-    if (!this.selectedElement) return;
-    
-    this.selectedElement.width = x - this.startX;
-    this.selectedElement.height = y - this.startY;
-  }
-  
-  createText(x, y) {
-    const text = prompt('输入文本：');
-    if (text) {
-      const element = {
-        id: Date.now(),
-        type: 'text',
-        x: x,
-        y: y,
-        text: text,
-        fontSize: 20,
-        color: this.strokeColor
-      };
-      this.elements.push(element);
-      this.save();
-      this.render();
-    }
-  }
-  
-  getElementAt(x, y) {
+
+  // ──────────────────────────────────────
+  //  命中检测（宽松版，带 padding）
+  // ──────────────────────────────────────
+  getElementAt(wx, wy) {
+    const pad = 12 / this.scale; // 屏幕空间 12px 容差
     for (let i = this.elements.length - 1; i >= 0; i--) {
       const el = this.elements[i];
-      if (this.isPointInElement(x, y, el)) {
-        return el;
-      }
+      if (this._hitTest(el, wx, wy, pad)) return el;
     }
     return null;
   }
-  
-  isPointInElement(x, y, el) {
-    if (el.type === 'text') {
-      const width = el.text.length * el.fontSize * 0.6;
-      const height = el.fontSize;
-      return x >= el.x && x <= el.x + width && y >= el.y - height && y <= el.y;
+
+  getElementById(id) {
+    return this.elements.find((el) => el.id === id);
+  }
+
+  _hitTest(el, x, y, pad) {
+    if (el.type === 'pen') {
+      // 检测点是否靠近路径任一线段
+      const pts = el.points;
+      for (let i = 1; i < pts.length; i++) {
+        if (this._distToSegment(x, y, pts[i - 1], pts[i]) < pad) return true;
+      }
+      return false;
     }
-    
-    const minX = Math.min(el.x, el.x + el.width);
-    const maxX = Math.max(el.x, el.x + el.width);
-    const minY = Math.min(el.y, el.y + el.height);
-    const maxY = Math.max(el.y, el.y + el.height);
-    
+    if (el.type === 'text') {
+      const w = (el.text || '').length * el.fontSize * 0.6;
+      const h = el.fontSize;
+      return x >= el.x - pad && x <= el.x + w + pad && y >= el.y - h - pad && y <= el.y + pad;
+    }
+    if (el.type === 'line' || el.type === 'arrow') {
+      return this._distToSegment(x, y, { x: el.x, y: el.y }, { x: el.x + el.width, y: el.y + el.height }) < pad;
+    }
+    // rectangle, circle — bounding box
+    const minX = Math.min(el.x, el.x + el.width) - pad;
+    const maxX = Math.max(el.x, el.x + el.width) + pad;
+    const minY = Math.min(el.y, el.y + el.height) - pad;
+    const maxY = Math.max(el.y, el.y + el.height) + pad;
     return x >= minX && x <= maxX && y >= minY && y <= maxY;
   }
-  
-  deleteSelected() {
-    if (this.selectedElement) {
-      this.elements = this.elements.filter(el => el.id !== this.selectedElement.id);
-      this.selectedElement = null;
-      this.save();
-      this.render();
-    }
+
+  _distToSegment(px, py, a, b) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) return Math.hypot(px - a.x, py - a.y);
+    let t = ((px - a.x) * dx + (py - a.y) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (a.x + t * dx), py - (a.y + t * dy));
   }
-  
-  render() {
-    if (!this.rc) return;
-    
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    
-    // 绘制网格背景
-    this.drawGrid();
-    
-    // 绘制所有元素
-    this.elements.forEach(el => {
-      this.drawElement(el);
-    });
-    
-    // 绘制选中框
-    if (this.selectedElement) {
-      this.drawSelection(this.selectedElement);
-    }
-  }
-  
-  drawGrid() {
-    this.ctx.strokeStyle = '#e0e0e0';
-    this.ctx.lineWidth = 0.5;
-    
-    const gridSize = 20;
-    for (let x = 0; x < this.canvas.width; x += gridSize) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(x, 0);
-      this.ctx.lineTo(x, this.canvas.height);
-      this.ctx.stroke();
-    }
-    for (let y = 0; y < this.canvas.height; y += gridSize) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, y);
-      this.ctx.lineTo(this.canvas.width, y);
-      this.ctx.stroke();
-    }
-  }
-  
-  drawElement(el) {
-    const options = {
-      stroke: el.strokeColor,
-      fill: el.fillColor !== 'transparent' ? el.fillColor : undefined,
-      strokeWidth: el.strokeWidth,
-      roughness: 1.5, // 手绘风格
-      bowing: 1
+
+  // ──────────────────────────────────────
+  //  文本
+  // ──────────────────────────────────────
+  createText(x, y) {
+    const text = prompt('输入文本：');
+    if (!text) return;
+    this.pushUndo();
+    const el = {
+      id: this._uid(),
+      type: 'text',
+      x, y,
+      text,
+      fontSize: 20,
+      color: this.strokeColor,
     };
-    
-    if (el.type === 'rectangle') {
-      this.rc.rectangle(el.x, el.y, el.width, el.height, options);
-    } else if (el.type === 'circle') {
-      const cx = el.x + el.width / 2;
-      const cy = el.y + el.height / 2;
-      const rx = Math.abs(el.width) / 2;
-      const ry = Math.abs(el.height) / 2;
-      this.rc.ellipse(cx, cy, rx * 2, ry * 2, options);
-    } else if (el.type === 'arrow') {
-      const x1 = el.x;
-      const y1 = el.y;
-      const x2 = el.x + el.width;
-      const y2 = el.y + el.height;
-      this.rc.line(x1, y1, x2, y2, options);
-      
-      // 绘制箭头
-      const angle = Math.atan2(y2 - y1, x2 - x1);
-      const arrowSize = 15;
-      const arrowAngle = Math.PI / 6;
-      
-      this.rc.line(x2, y2, 
-        x2 - arrowSize * Math.cos(angle - arrowAngle),
-        y2 - arrowSize * Math.sin(angle - arrowAngle), options);
-      this.rc.line(x2, y2,
-        x2 - arrowSize * Math.cos(angle + arrowAngle),
-        y2 - arrowSize * Math.sin(angle + arrowAngle), options);
-    } else if (el.type === 'text') {
-      this.ctx.font = `${el.fontSize}px "KaiTi", "STKaiti", serif`;
-      this.ctx.fillStyle = el.color;
-      this.ctx.fillText(el.text, el.x, el.y);
-    }
-  }
-  
-  drawSelection(el) {
-    this.ctx.strokeStyle = '#4a90e2';
-    this.ctx.lineWidth = 1;
-    this.ctx.setLineDash([5, 5]);
-    
-    if (el.type === 'text') {
-      const width = el.text.length * el.fontSize * 0.6;
-      const height = el.fontSize;
-      this.ctx.strokeRect(el.x - 5, el.y - height - 5, width + 10, height + 10);
-    } else {
-      const minX = Math.min(el.x, el.x + el.width) - 5;
-      const maxX = Math.max(el.x, el.x + el.width) + 5;
-      const minY = Math.min(el.y, el.y + el.height) - 5;
-      const maxY = Math.max(el.y, el.y + el.height) + 5;
-      this.ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
-    }
-    
-    this.ctx.setLineDash([]);
-  }
-  
-  setTool(tool) {
-    this.currentTool = tool;
-    this.selectedElement = null;
+    this.elements.push(el);
+    this.save();
     this.render();
   }
-  
-  setStrokeColor(color) {
-    this.strokeColor = color;
+
+  // ──────────────────────────────────────
+  //  删除 / 撤销 / 重做
+  // ──────────────────────────────────────
+  deleteSelected() {
+    if (this.selectedId === null) return;
+    this.pushUndo();
+    this.elements = this.elements.filter((el) => el.id !== this.selectedId);
+    this.selectedId = null;
+    this.save();
+    this.render();
   }
-  
-  setFillColor(color) {
-    this.fillColor = color;
+
+  pushUndo() {
+    this.undoStack.push(JSON.stringify(this.elements));
+    if (this.undoStack.length > 50) this.undoStack.shift();
+    this.redoStack = [];
   }
-  
-  setStrokeWidth(width) {
-    this.strokeWidth = width;
+
+  undo() {
+    if (this.undoStack.length === 0) return;
+    this.redoStack.push(JSON.stringify(this.elements));
+    this.elements = JSON.parse(this.undoStack.pop());
+    this.selectedId = null;
+    this.save();
+    this.render();
   }
-  
-  clear() {
-    if (confirm('确定要清空画布吗？')) {
-      this.elements = [];
-      this.selectedElement = null;
-      this.save();
-      this.render();
+
+  redo() {
+    if (this.redoStack.length === 0) return;
+    this.undoStack.push(JSON.stringify(this.elements));
+    this.elements = JSON.parse(this.redoStack.pop());
+    this.selectedId = null;
+    this.save();
+    this.render();
+  }
+
+  // ──────────────────────────────────────
+  //  工具 / 样式设置
+  // ──────────────────────────────────────
+  setTool(tool) {
+    this.currentTool = tool;
+    this.selectedId = null;
+    this.canvas.style.cursor = tool === 'select' ? 'default' : 'crosshair';
+    this.render();
+  }
+
+  // ──────────────────────────────────────
+  //  渲染
+  // ──────────────────────────────────────
+  render() {
+    if (!this.rc) return;
+    const dpr = window.devicePixelRatio || 1;
+    const W = this.canvas.width / dpr;
+    const H = this.canvas.height / dpr;
+
+    this.ctx.save();
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.ctx.clearRect(0, 0, W, H);
+
+    // 背景色
+    this.ctx.fillStyle = '#0e1119';
+    this.ctx.fillRect(0, 0, W, H);
+
+    // 应用世界坐标变换
+    this.ctx.translate(this.offsetX, this.offsetY);
+    this.ctx.scale(this.scale, this.scale);
+
+    // 网格
+    if (this.showGrid) this.drawGrid(W, H);
+
+    // 绘制元素
+    this.elements.forEach((el) => this.drawElement(el));
+
+    // 绘制预览
+    if (this.previewEl) this.drawElement(this.previewEl);
+    if (this.currentPath) this.drawElement(this.currentPath);
+
+    // 选中框
+    if (this.selectedId !== null) {
+      const el = this.getElementById(this.selectedId);
+      if (el) this.drawSelection(el);
+    }
+
+    this.ctx.restore();
+
+    // 缩放指示器（屏幕空间）
+    this.ctx.save();
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    this.ctx.font = '11px sans-serif';
+    this.ctx.textAlign = 'right';
+    this.ctx.fillText(`${Math.round(this.scale * 100)}%`, W - 12, H - 12);
+    this.ctx.restore();
+  }
+
+  drawGrid(W, H) {
+    const size = 25;
+    // 计算可视世界坐标范围
+    const wx1 = -this.offsetX / this.scale;
+    const wy1 = -this.offsetY / this.scale;
+    const wx2 = (W - this.offsetX) / this.scale;
+    const wy2 = (H - this.offsetY) / this.scale;
+    const x1 = Math.floor(wx1 / size) * size;
+    const y1 = Math.floor(wy1 / size) * size;
+
+    this.ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    this.ctx.lineWidth = 1 / this.scale;
+
+    for (let x = x1; x <= wx2; x += size) {
+      this.ctx.beginPath();
+      this.ctx.moveTo(x, wy1);
+      this.ctx.lineTo(x, wy2);
+      this.ctx.stroke();
+    }
+    for (let y = y1; y <= wy2; y += size) {
+      this.ctx.beginPath();
+      this.ctx.moveTo(wx1, y);
+      this.ctx.lineTo(wx2, y);
+      this.ctx.stroke();
     }
   }
-  
-  save() {
-    const data = {
-      elements: this.elements,
-      timestamp: Date.now()
+
+  drawElement(el) {
+    const opts = {
+      stroke: el.strokeColor || '#5eead4',
+      strokeWidth: el.strokeWidth || 2,
+      roughness: 1.2,
+      bowing: 1,
     };
-    localStorage.setItem(this.storageKey, JSON.stringify(data));
-  }
-  
-  load() {
-    const saved = localStorage.getItem(this.storageKey);
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
-        this.elements = data.elements || [];
-      } catch (e) {
-        console.error('加载绘图数据失败:', e);
-        this.elements = [];
+    if (el.fillColor && el.fillColor !== 'transparent') opts.fill = el.fillColor;
+
+    if (el.type === 'pen') {
+      const pts = el.points;
+      if (!pts || pts.length < 2) return;
+      // 用 roughjs 的 linearPath / polygon
+      for (let i = 1; i < pts.length; i++) {
+        this.rc.line(pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y, opts);
       }
+      return;
+    }
+
+    if (el.type === 'rectangle') {
+      this.rc.rectangle(el.x, el.y, el.width, el.height, opts);
+      return;
+    }
+
+    if (el.type === 'circle') {
+      const cx = el.x + el.width / 2;
+      const cy = el.y + el.height / 2;
+      this.rc.ellipse(cx, cy, Math.abs(el.width), Math.abs(el.height), opts);
+      return;
+    }
+
+    if (el.type === 'line') {
+      this.rc.line(el.x, el.y, el.x + el.width, el.y + el.height, opts);
+      return;
+    }
+
+    if (el.type === 'arrow') {
+      const x1 = el.x, y1 = el.y;
+      const x2 = el.x + el.width, y2 = el.y + el.height;
+      this.rc.line(x1, y1, x2, y2, opts);
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const aSize = 14 + (el.strokeWidth || 2) * 2;
+      const aa = Math.PI / 6;
+      this.rc.line(x2, y2, x2 - aSize * Math.cos(angle - aa), y2 - aSize * Math.sin(angle - aa), opts);
+      this.rc.line(x2, y2, x2 - aSize * Math.cos(angle + aa), y2 - aSize * Math.sin(angle + aa), opts);
+      return;
+    }
+
+    if (el.type === 'text') {
+      this.ctx.font = `${el.fontSize || 20}px "KaiTi","STKaiti",serif`;
+      this.ctx.fillStyle = el.color || '#5eead4';
+      this.ctx.fillText(el.text, el.x, el.y);
+      return;
     }
   }
-  
+
+  drawSelection(el) {
+    const bb = this._bbox(el);
+    const pad = 6 / this.scale;
+    this.ctx.strokeStyle = '#5eead4';
+    this.ctx.lineWidth = 1.5 / this.scale;
+    this.ctx.setLineDash([6 / this.scale, 4 / this.scale]);
+    this.ctx.strokeRect(bb.x - pad, bb.y - pad, bb.w + pad * 2, bb.h + pad * 2);
+    this.ctx.setLineDash([]);
+
+    // 四角手柄
+    const hs = 5 / this.scale;
+    const corners = [
+      [bb.x - pad, bb.y - pad],
+      [bb.x + bb.w + pad, bb.y - pad],
+      [bb.x - pad, bb.y + bb.h + pad],
+      [bb.x + bb.w + pad, bb.y + bb.h + pad],
+    ];
+    this.ctx.fillStyle = '#5eead4';
+    corners.forEach(([cx, cy]) => {
+      this.ctx.fillRect(cx - hs, cy - hs, hs * 2, hs * 2);
+    });
+  }
+
+  _bbox(el) {
+    if (el.type === 'text') {
+      const w = (el.text || '').length * (el.fontSize || 20) * 0.6;
+      return { x: el.x, y: el.y - (el.fontSize || 20), w, h: el.fontSize || 20 };
+    }
+    if (el.type === 'pen') {
+      const xs = el.points.map((p) => p.x);
+      const ys = el.points.map((p) => p.y);
+      const minX = Math.min(...xs);
+      const minY = Math.min(...ys);
+      return { x: minX, y: minY, w: Math.max(...xs) - minX, h: Math.max(...ys) - minY };
+    }
+    return {
+      x: Math.min(el.x, el.x + el.width),
+      y: Math.min(el.y, el.y + el.height),
+      w: Math.abs(el.width),
+      h: Math.abs(el.height),
+    };
+  }
+
+  // ──────────────────────────────────────
+  //  持久化
+  // ──────────────────────────────────────
+  save() {
+    localStorage.setItem(this.storageKey, JSON.stringify({
+      elements: this.elements,
+      scale: this.scale,
+      offsetX: this.offsetX,
+      offsetY: this.offsetY,
+    }));
+  }
+
+  load() {
+    const raw = localStorage.getItem(this.storageKey);
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      this.elements = data.elements || [];
+      if (data.scale) this.scale = data.scale;
+      if (data.offsetX !== undefined) this.offsetX = data.offsetX;
+      if (data.offsetY !== undefined) this.offsetY = data.offsetY;
+    } catch (e) {
+      this.elements = [];
+    }
+  }
+
+  clear() {
+    if (!confirm('确定清空画布？')) return;
+    this.pushUndo();
+    this.elements = [];
+    this.selectedId = null;
+    this.scale = 1;
+    this.offsetX = 0;
+    this.offsetY = 0;
+    this.save();
+    this.render();
+  }
+
   export() {
-    const data = JSON.stringify(this.elements, null, 2);
+    const data = JSON.stringify({
+      elements: this.elements,
+      scale: this.scale,
+      offsetX: this.offsetX,
+      offsetY: this.offsetY,
+    }, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -415,13 +695,14 @@ class DrawingApp {
     a.click();
     URL.revokeObjectURL(url);
   }
-  
+
   import(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target.result);
-        this.elements = data;
+        this.elements = data.elements || data;
+        this.pushUndo();
         this.save();
         this.render();
       } catch (err) {
@@ -430,53 +711,32 @@ class DrawingApp {
     };
     reader.readAsText(file);
   }
+
+  _uid() {
+    return Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+  }
 }
 
-// 全局实例
+// ──────────────────────────────────────
+//  全局接口
+// ──────────────────────────────────────
 let drawingApp = null;
 
-// 初始化
 function initDrawing() {
   if (!drawingApp) {
     drawingApp = new DrawingApp('drawingCanvas', 'drawingView');
+  } else {
+    // 已存在则重新 resize（视图切换时容器尺寸可能变化）
+    setTimeout(() => drawingApp.resize(), 50);
   }
 }
 
-// 工具切换
-function setDrawingTool(tool) {
-  if (drawingApp) {
-    drawingApp.setTool(tool);
-    // 更新 UI
-    document.querySelectorAll('.tool-btn').forEach(btn => {
-      btn.classList.remove('active');
-    });
-    document.querySelector(`[data-tool="${tool}"]`).classList.add('active');
-  }
-}
-
-// 清空画布
-function clearDrawing() {
-  if (drawingApp) {
-    drawingApp.clear();
-  }
-}
-
-// 导出
-function exportDrawing() {
-  if (drawingApp) {
-    drawingApp.export();
-  }
-}
-
-// 导入
+function clearDrawing() { drawingApp?.clear(); }
+function exportDrawing() { drawingApp?.export(); }
 function importDrawing() {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = '.json';
-  input.onchange = (e) => {
-    if (drawingApp && e.target.files[0]) {
-      drawingApp.import(e.target.files[0]);
-    }
-  };
+  input.onchange = (e) => { if (drawingApp && e.target.files[0]) drawingApp.import(e.target.files[0]); };
   input.click();
 }

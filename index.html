@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=47" />
+    <link rel="stylesheet" href="./styles.css?v=48" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
@@ -150,76 +150,130 @@
         </section>
       </div>
 
-      <div id="drawingView" class="app-view">
-        <section class="app-card drawing-toolbar">
+      <div id="drawingView" class="app-view drawing-view">
+        <div class="drawing-toolbar">
           <div class="tool-group">
-            <button class="tool-btn active" data-tool="select" title="选择">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+            <button class="tool-btn active" data-tool="pen" title="画笔">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
               </svg>
             </button>
             <button class="tool-btn" data-tool="rectangle" title="矩形">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2"/>
               </svg>
             </button>
             <button class="tool-btn" data-tool="circle" title="圆形">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="9"/>
               </svg>
             </button>
+            <button class="tool-btn" data-tool="line" title="直线">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="19" x2="19" y2="5"/>
+              </svg>
+            </button>
             <button class="tool-btn" data-tool="arrow" title="箭头">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="5" y1="19" x2="19" y2="5"/>
                 <polyline points="12 5 19 5 19 12"/>
               </svg>
             </button>
             <button class="tool-btn" data-tool="text" title="文本">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="4 7 4 4 20 4 20 7"/>
                 <line x1="9" y1="20" x2="15" y2="20"/>
                 <line x1="12" y1="4" x2="12" y2="20"/>
               </svg>
             </button>
+            <button class="tool-btn" data-tool="select" title="选择/移动">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+              </svg>
+            </button>
           </div>
-          
+
           <div class="tool-group">
-            <input type="color" id="strokeColorPicker" value="#000000" title="线条颜色">
-            <input type="color" id="fillColorPicker" value="#ffffff" title="填充颜色">
-            <select id="strokeWidthSelect" title="线条粗细">
+            <label class="color-swatch" title="线条颜色">
+              <input type="color" id="strokeColorPicker" value="#5eead4">
+              <span class="color-dot" id="strokeColorDot"></span>
+            </label>
+            <label class="color-swatch" title="填充颜色">
+              <input type="color" id="fillColorPicker" value="transparent">
+              <span class="color-dot fill-dot" id="fillColorDot"></span>
+            </label>
+            <select id="strokeWidthSelect" class="stroke-select" title="粗细">
               <option value="1">细</option>
               <option value="2" selected>中</option>
               <option value="4">粗</option>
             </select>
           </div>
-          
+
           <div class="tool-group">
-            <button class="tool-btn" onclick="clearDrawing()" title="清空画布">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button class="tool-btn" id="toggleGridBtn" title="网格" type="button">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"/>
+                <rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/>
+              </svg>
+            </button>
+            <button class="tool-btn" id="zoomOutBtn" title="缩小" type="button">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="8" y1="11" x2="14" y2="11"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </button>
+            <button class="tool-btn" id="zoomInBtn" title="放大" type="button">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="11" y1="8" x2="11" y2="14"/>
+                <line x1="8" y1="11" x2="14" y2="11"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="tool-group">
+            <button class="tool-btn" id="drawUndoBtn" title="撤销" type="button">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1 4 1 10 7 10"/>
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+              </svg>
+            </button>
+            <button class="tool-btn" id="drawRedoBtn" title="重做" type="button">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"/>
+                <path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/>
+              </svg>
+            </button>
+            <button class="tool-btn" onclick="clearDrawing()" title="清空" type="button">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"/>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
               </svg>
             </button>
-            <button class="tool-btn" onclick="exportDrawing()" title="导出">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button class="tool-btn" onclick="exportDrawing()" title="导出" type="button">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
             </button>
-            <button class="tool-btn" onclick="importDrawing()" title="导入">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button class="tool-btn" onclick="importDrawing()" title="导入" type="button">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="17 8 12 3 7 8"/>
                 <line x1="12" y1="3" x2="12" y2="15"/>
               </svg>
             </button>
           </div>
-        </section>
-        
-        <section class="app-card drawing-canvas-container">
+        </div>
+
+        <div class="drawing-canvas-wrap">
           <canvas id="drawingCanvas"></canvas>
-        </section>
+        </div>
       </div>
 
       <div id="settingsView" class="app-view">
@@ -328,8 +382,8 @@
       </nav>
     </main>
 
-    <script src="./app.js?v=47"></script>
-    <script src="./drawing.js?v=47"></script>
+    <script src="./app.js?v=48"></script>
+    <script src="./drawing.js?v=48"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first

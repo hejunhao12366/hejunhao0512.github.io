@@ -64,93 +64,151 @@
   --gap: 14px;
 }
 
-/* ── Drawing Module ── */
+/* ── Drawing Module v2 ── */
+.drawing-view {
+  display: none;
+  flex-direction: column;
+  gap: 0;
+  height: calc(100vh - 120px);
+  padding-bottom: 0;
+}
+.drawing-view.active {
+  display: flex;
+}
+
 .drawing-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  padding: 12px;
-  background: var(--drawing-toolbar-bg);
+  gap: 6px;
+  padding: 8px;
+  background: rgba(14, 17, 25, 0.92);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
   border-radius: var(--r-lg);
-  margin-bottom: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 6px;
   align-items: center;
   position: relative;
   z-index: 10;
   touch-action: auto;
+  flex-shrink: 0;
 }
 
 .tool-group {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   align-items: center;
+  padding-right: 6px;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+.tool-group:last-child {
+  border-right: none;
 }
 
 .tool-btn {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border: none;
-  border-radius: var(--r-md);
-  background: var(--drawing-tool-btn);
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-2);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
+  flex-shrink: 0;
 }
 
-.tool-btn:hover {
-  background: var(--drawing-tool-btn-hover);
-  transform: scale(1.05);
+.tool-btn:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(0.92);
 }
 
 .tool-btn.active {
-  background: var(--drawing-tool-btn-active);
+  background: var(--mint);
   color: var(--bg);
-  box-shadow: 0 0 12px rgba(94, 234, 212, 0.4);
+  box-shadow: 0 0 10px rgba(94, 234, 212, 0.35);
 }
 
 .tool-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
-#strokeColorPicker,
-#fillColorPicker {
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: var(--r-md);
+/* 颜色选择器 */
+.color-swatch {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.06);
   cursor: pointer;
-  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
-#strokeWidthSelect {
-  height: 40px;
-  padding: 0 12px;
+.color-swatch input[type="color"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   border: none;
-  border-radius: var(--r-md);
-  background: var(--drawing-tool-btn);
+  opacity: 0;
+  cursor: pointer;
+}
+
+.color-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #5eead4;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.fill-dot {
+  background: transparent;
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+}
+
+.stroke-select {
+  height: 36px;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-2);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+  outline: none;
+}
+.stroke-select:active {
+  background: rgba(255, 255, 255, 0.12);
 }
 
-.drawing-canvas-container {
-  padding: 0;
-  overflow: hidden;
+/* 画布容器 */
+.drawing-canvas-wrap {
+  flex: 1;
+  min-height: 0;
   border-radius: var(--r-lg);
-  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #0e1119;
+  position: relative;
 }
 
 #drawingCanvas {
   display: block;
   width: 100%;
-  height: calc(100vh - 200px);
-  cursor: crosshair;
+  height: 100%;
   touch-action: none;
 }
 
