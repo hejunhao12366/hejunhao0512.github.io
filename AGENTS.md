@@ -42,10 +42,10 @@
 
 ## ⚠️ 修改规则（每次改动必须遵守）
 
-1. **改 CSS/JS 后**：递增 cache 版本（`v48`→`v49`），同步更新 3 处：
+1. **改 CSS/JS 后**：递增 cache 版本（`v49`→`v50`），同步更新 3 处：
    - `service-worker.js` 的 `cacheName`
-   - `service-worker.js` 的 assets 列表（`?v=49`）
-   - `index.html` 的 `<link>` / `<script>` 标签（`?v=49`）
+   - `service-worker.js` 的 assets 列表（`?v=50`）
+   - `index.html` 的 `<link>` / `<script>` 标签（`?v=50`）
 2. **验证**：用 Node 脚本做静态检查（语法 + 关键内容存在性），确保通过后再推送
 3. **推送**：`git push` 被墙（git insteadOf 镜像规则），用 **GitHub REST API** 推送：
    - 脚本模板：写 Python 脚本到 `D:\tmp\hermes-push.py`，用后即删
