@@ -991,8 +991,8 @@ h2 {
   background: rgba(94, 234, 212, 0.06);
 }
 
-.plan-row.past {
-  opacity: 0.6;
+.plan-row.paid {
+  opacity: 0.55;
 }
 
 .plan-month {
@@ -1034,6 +1034,32 @@ h2 {
 .plan-amount-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+.plan-paid-toggle {
+  flex-shrink: 0;
+  min-width: 56px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.plan-paid-toggle:active {
+  transform: scale(0.92);
+}
+
+.plan-paid-toggle.done {
+  border-color: var(--mint);
+  background: rgba(94, 234, 212, 0.15);
+  color: var(--mint);
 }
 
 .repay-plan-hint {
