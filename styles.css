@@ -833,22 +833,15 @@ h2 {
   transition: width 0.5s var(--ease);
 }
 
-.repay-actions {
-  display: flex;
-  gap: 8px;
+.repay-plan-btn {
+  width: 100%;
   margin-top: 12px;
-  flex-wrap: wrap;
-}
-
-.repay-btn {
-  flex: 1;
-  min-width: 60px;
-  padding: 8px 4px;
+  padding: 10px;
   border: 1px solid rgba(94, 234, 212, 0.2);
   border-radius: var(--r-sm);
   background: rgba(94, 234, 212, 0.06);
   color: var(--mint);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s var(--ease);
@@ -856,19 +849,199 @@ h2 {
   touch-action: manipulation;
 }
 
-.repay-btn:active {
+.repay-plan-btn:active {
   background: rgba(94, 234, 212, 0.2);
-  transform: scale(0.95);
+  transform: scale(0.98);
 }
 
-.repay-btn.reset {
-  border-color: rgba(248, 113, 113, 0.2);
-  background: rgba(248, 113, 113, 0.06);
+/* ── 还款计划弹窗 ── */
+.repay-plan-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s var(--ease);
+}
+
+.repay-plan-overlay.hidden {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.repay-plan-modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  animation: slideUp 0.25s var(--ease);
+}
+
+.repay-plan-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.repay-plan-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.repay-plan-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.repay-plan-close:active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.repay-plan-body {
+  padding: 16px 20px 24px;
+}
+
+.repay-plan-section {
+  margin-bottom: 20px;
+}
+
+.repay-plan-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.repay-plan-progress {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mint);
+}
+
+.repay-plan-title .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.repay-plan-title .dot.red {
+  background: var(--red);
+}
+
+.repay-plan-title .dot.blue {
+  background: var(--blue);
+}
+
+.plan-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plan-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
+}
+
+.plan-row.current {
+  border-color: rgba(94, 234, 212, 0.3);
+  background: rgba(94, 234, 212, 0.06);
+}
+
+.plan-row.past {
+  opacity: 0.6;
+}
+
+.plan-month {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  flex-shrink: 0;
+  min-width: 110px;
+}
+
+.plan-month.red {
   color: var(--red);
 }
 
-.repay-btn.reset:active {
-  background: rgba(248, 113, 113, 0.2);
+.plan-month.blue {
+  color: var(--blue);
+}
+
+.plan-amount-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: right;
+  outline: none;
+  transition: border-color 0.15s var(--ease);
+}
+
+.plan-amount-input:focus {
+  border-color: var(--mint);
+}
+
+.plan-amount-input::-webkit-outer-spin-button,
+.plan-amount-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.repay-plan-hint {
+  margin: 16px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.5;
 }
 
 .add-split-btn {

@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=49" />
+    <link rel="stylesheet" href="./styles.css?v=50" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
@@ -78,18 +78,13 @@
           <div class="formula-line" id="debtFormula"></div>
           <div class="repay-progress">
             <div class="repay-progress-label">
-              <span>本月已还</span>
+              <span>已还</span>
               <span id="repayProgressPercent"></span>
             </div>
             <div class="repay-progress-bar">
               <div class="repay-progress-fill" id="repayProgressFill"></div>
             </div>
-            <div class="repay-actions">
-              <button class="repay-btn" type="button" onclick="addRepayment(50)">+50</button>
-              <button class="repay-btn" type="button" onclick="addRepayment(100)">+100</button>
-              <button class="repay-btn" type="button" onclick="addRepayment()">自定义</button>
-              <button class="repay-btn reset" type="button" onclick="resetRepayment()">归零</button>
-            </div>
+            <button class="repay-plan-btn" type="button" onclick="openRepayPlanModal()">📅 还款计划</button>
           </div>
         </section>
 
@@ -390,8 +385,8 @@
       </nav>
     </main>
 
-    <script src="./app.js?v=49"></script>
-    <script src="./drawing.js?v=49"></script>
+    <script src="./app.js?v=50"></script>
+    <script src="./drawing.js?v=50"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first
@@ -413,5 +408,32 @@
         });
       }
     </script>
+
+    <!-- 还款计划弹窗 -->
+    <div id="repayPlanModal" class="repay-plan-overlay hidden">
+      <div class="repay-plan-modal">
+        <div class="repay-plan-header">
+          <h3>还款计划</h3>
+          <button class="repay-plan-close" onclick="closeRepayPlanModal()">✕</button>
+        </div>
+        <div class="repay-plan-body">
+          <div class="repay-plan-section">
+            <div class="repay-plan-title">
+              <span class="dot red"></span>白条
+              <span class="repay-plan-progress" id="planProgress_baitiao"></span>
+            </div>
+            <div class="plan-rows" id="planRows_baitiao"></div>
+          </div>
+          <div class="repay-plan-section">
+            <div class="repay-plan-title">
+              <span class="dot blue"></span>花呗
+              <span class="repay-plan-progress" id="planProgress_huabei"></span>
+            </div>
+            <div class="plan-rows" id="planRows_huabei"></div>
+          </div>
+          <p class="repay-plan-hint">填写每月计划还款金额，进度条自动按已过月份累计计算。</p>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
