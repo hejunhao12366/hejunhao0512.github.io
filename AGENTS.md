@@ -36,16 +36,16 @@
 
 ## 当前版本
 
-- **PWA 缓存**：`v50`
-- **HTML asset 版本**：`?v=50`（styles.css / app.js / drawing.js）
-- **最新 commit**：`80e2ab3` — Repay plan modal
+- **PWA 缓存**：`v51`
+- **HTML asset 版本**：`?v=51`（styles.css / app.js / drawing.js）
+- **最新 commit**：`64b1ace` — Repay plan 12 months + paid toggle
 
 ## ⚠️ 修改规则（每次改动必须遵守）
 
-1. **改 CSS/JS 后**：递增 cache 版本（`v49`→`v50`），同步更新 3 处：
+1. **改 CSS/JS 后**：递增 cache 版本（`v50`→`v51`），同步更新 3 处：
    - `service-worker.js` 的 `cacheName`
-   - `service-worker.js` 的 assets 列表（`?v=50`）
-   - `index.html` 的 `<link>` / `<script>` 标签（`?v=50`）
+   - `service-worker.js` 的 assets 列表（`?v=51`）
+   - `index.html` 的 `<link>` / `<script>` 标签（`?v=51`）
 2. **验证**：用 Node 脚本做静态检查（语法 + 关键内容存在性），确保通过后再推送
 3. **推送**：`git push` 被墙（git insteadOf 镜像规则），用 **GitHub REST API** 推送：
    - 脚本模板：写 Python 脚本到 `D:\tmp\hermes-push.py`，用后即删
@@ -111,6 +111,7 @@ pen（画笔）、rectangle、circle、line（直线）、arrow、text、select�
 
 | 日期 | Commit | 内容 |
 |------|--------|------|
+| 2026-07-30 | `64b1ace` | 还款计划：12个月视图 + 每月未还/✓已还切换按钮（进度=已还月份累计） |
 | 2026-07-30 | `80e2ab3` | 还款计划弹窗：删手动按钮，改自动计算(逐月计划累计)，红蓝两路每月可自定义金额 |
 | 2026-07-29 | `6cb7965` | 修复4问题：假期颜色(红+琥珀)、已还进度条逻辑(本月已还/待还)、自定义分期行、云同步覆盖保护 |
 | 2026-07-29 | `715d42e` | Drawing v2：画笔/直线工具、世界坐标缩放平移、命中检测、撤销重做、网格切换 |
