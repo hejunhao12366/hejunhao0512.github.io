@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=48" />
+    <link rel="stylesheet" href="./styles.css?v=49" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
@@ -78,11 +78,17 @@
           <div class="formula-line" id="debtFormula"></div>
           <div class="repay-progress">
             <div class="repay-progress-label">
-              <span>已还</span>
+              <span>本月已还</span>
               <span id="repayProgressPercent"></span>
             </div>
             <div class="repay-progress-bar">
               <div class="repay-progress-fill" id="repayProgressFill"></div>
+            </div>
+            <div class="repay-actions">
+              <button class="repay-btn" type="button" onclick="addRepayment(50)">+50</button>
+              <button class="repay-btn" type="button" onclick="addRepayment(100)">+100</button>
+              <button class="repay-btn" type="button" onclick="addRepayment()">自定义</button>
+              <button class="repay-btn reset" type="button" onclick="resetRepayment()">归零</button>
             </div>
           </div>
         </section>
@@ -109,6 +115,8 @@
             <span>=</span>
             <span class="tag mint" id="splitLeftText"></span>
           </div>
+          <div id="customSplitsContainer"></div>
+          <button class="add-split-btn" type="button" onclick="addCustomSplit()">+ 添加自定义分期</button>
           <div class="note-pill" id="installmentNote"></div>
         </section>
 
@@ -382,8 +390,8 @@
       </nav>
     </main>
 
-    <script src="./app.js?v=48"></script>
-    <script src="./drawing.js?v=48"></script>
+    <script src="./app.js?v=49"></script>
+    <script src="./drawing.js?v=49"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first

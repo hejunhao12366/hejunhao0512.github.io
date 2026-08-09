@@ -14,9 +14,11 @@ const sampleState = {
     huabei: 590.76,
   },
   livingFee: 1500,
+  paidThisMonth: 0,
   installmentAmount: 590.76,
   installmentMonths: 3,
   installmentNote: "",
+  customSplits: [],
   balances: {
     alipay: 321.86,
     wechat: 263.64,
@@ -104,9 +106,16 @@ function normalizeState(nextState) {
       huabei: Number(nextState.monthlyRepay?.huabei || 0),
     },
     livingFee: Number(nextState.livingFee || 0),
+    paidThisMonth: Number(nextState.paidThisMonth || 0),
     installmentAmount: Number(nextState.installmentAmount || 0),
     installmentMonths: Math.max(1, Number(nextState.installmentMonths || 1)),
     installmentNote: String(nextState.installmentNote || ""),
+    customSplits: Array.isArray(nextState.customSplits) ? nextState.customSplits.map(s => ({
+      id: String(s.id || createId()),
+      label: String(s.label || ""),
+      amount: Number(s.amount || 0),
+      months: Math.max(1, Number(s.months || 1)),
+    })) : [],
     balances: {
       alipay: Number(nextState.balances?.alipay || 0),
       wechat: Number(nextState.balances?.wechat || 0),
@@ -176,9 +185,10 @@ function renderDebt() {
     { color: "blue", value: state.debts.huabei, path: "debts.huabei" },
   ]);
 
-  const totalDebt = state.debts.baitiao + state.debts.huabei;
-  const totalRepaid = Math.max(0, totalDebt - state.monthlyRepay.baitiao - state.monthlyRepay.huabei);
-  const percent = totalDebt > 0 ? Math.min(100, Math.round((totalRepaid / totalDebt) * 100)) : 0;
+  // 本月还款进度 = 本月已还 / 本月待还
+  const monthlyDue = state.monthlyRepay.baitiao + state.monthlyRepay.huabei;
+  const paid = state.paidThisMonth || 0;
+  const percent = monthlyDue > 0 ? Math.min(100, Math.round((paid / monthlyDue) * 100)) : 0;
   const fill = $("#repayProgressFill");
   const pct = $("#repayProgressPercent");
   if (fill) fill.style.width = percent + "%";
@@ -202,6 +212,71 @@ function renderMonth() {
   $("#splitRepayText").textContent = money(splitRepay);
   $("#splitLeftText").textContent = money(state.livingFee - splitRepay);
   $("#installmentNote").textContent = state.installmentNote || `分期：${money(state.installmentAmount)} / ${state.installmentMonths} = ${money(installmentPerMonth)}，突发情况时用`;
+
+  renderCustomSplits();
+}
+
+function renderCustomSplits() {
+  const container = $("#customSplitsContainer");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const splits = state.customSplits || [];
+  splits.forEach((split) => {
+    const perMonth = split.amount / split.months;
+    const row = document.createElement("div");
+    row.className = "balance-row custom-split-row";
+    const labelText = split.label ? `- ${split.label}：` : "- 分期：";
+    row.innerHTML = `
+      <span class="split-label">${labelText}</span>
+      <span>${money(state.livingFee)}</span>
+      <span>-</span>
+      <span class="tag purple">${money(perMonth)}</span>
+      <span>=</span>
+      <span class="tag mint">${money(state.livingFee - perMonth)}</span>
+      <button class="split-delete" onclick="removeCustomSplit('${split.id}')" title="删除">✕</button>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function addCustomSplit() {
+  const label = prompt("分期名称（可留空）：") || "";
+  const amountStr = prompt("分期总金额：");
+  if (!amountStr) return;
+  const amount = Number(amountStr);
+  if (isNaN(amount) || amount <= 0) { alert("金额无效"); return; }
+  const monthsStr = prompt("分几期？", "1");
+  const months = Math.max(1, Math.round(Number(monthsStr) || 1));
+
+  state.customSplits = state.customSplits || [];
+  state.customSplits.push({ id: createId(), label: label.trim(), amount, months });
+  saveState();
+  renderMonth();
+}
+
+function removeCustomSplit(id) {
+  state.customSplits = (state.customSplits || []).filter(s => s.id !== id);
+  saveState();
+  renderMonth();
+}
+
+function addRepayment(amount) {
+  if (amount === undefined) {
+    const input = prompt("输入还款金额：");
+    if (input === null) return;
+    amount = Number(input);
+    if (isNaN(amount) || amount <= 0) return;
+  }
+  state.paidThisMonth = (state.paidThisMonth || 0) + amount;
+  saveState();
+  renderDebt();
+}
+
+function resetRepayment() {
+  state.paidThisMonth = 0;
+  saveState();
+  renderDebt();
 }
 
 function renderDaily() {
@@ -218,9 +293,12 @@ function renderDaily() {
   $("#dailyCanUseText").textContent = money(dailyAmount);
 
   const highlight = document.querySelector(".daily-highlight");
-  if (highlight) highlight.classList.toggle("warning", dailyAmount > 0 && dailyAmount < 30);
+  const isHoliday = state.mode === "holiday";
+  // 假期模式：红色警示；在校模式：<30 时红色
+  const shouldWarn = isHoliday || (dailyAmount > 0 && dailyAmount < 30);
+  if (highlight) highlight.classList.toggle("warning", shouldWarn);
 
-  if (state.mode === "holiday") {
+  if (isHoliday) {
     $("#dailyKicker").textContent = "假期";
     $("#dailyTitle").textContent = "每天可用";
     $("#daysLabel").textContent = "假期剩余";
@@ -230,8 +308,12 @@ function renderDaily() {
     $("#daysLabel").textContent = "距发生活费";
   }
 
+  // 倒计时卡片：假期模式默认琥珀色（不依赖 urgent）
   const countdownCard = document.getElementById("countdownCard");
-  if (countdownCard) countdownCard.classList.toggle("urgent", days <= 3);
+  if (countdownCard) {
+    countdownCard.classList.toggle("holiday", isHoliday);
+    countdownCard.classList.toggle("urgent", days <= 3);
+  }
 }
 
 function getDivisorDays() {
@@ -1007,6 +1089,26 @@ async function pushCloudState() {
   if (!canUseCloud()) return;
 
   try {
+    // 先读云端最新状态，避免覆盖新数据
+    const checkResp = await fetch(`https://api.github.com/gists/${state.sync.gistId}`, {
+      headers: getGithubHeaders(),
+    });
+    if (checkResp.ok) {
+      const gist = await checkResp.json();
+      const file = gist.files?.["licai-data.json"];
+      if (file?.content) {
+        const cloudState = normalizeState(JSON.parse(file.content));
+        const cloudUpdatedAt = Number(cloudState.sync?.updatedAt || 0);
+        // 云端数据比本地新 → 拒绝推送，改为拉取
+        if (cloudUpdatedAt > state.sync.updatedAt) {
+          setSyncStatus("云端有更新，正在拉取...");
+          applyCloudState(cloudState);
+          setSyncStatus(`已拉取云端 ${formatSyncTime(cloudUpdatedAt)}`);
+          return;
+        }
+      }
+    }
+
     setSyncStatus("上传中...");
     const response = await fetch(`https://api.github.com/gists/${state.sync.gistId}`, {
       method: "PATCH",
@@ -1030,7 +1132,7 @@ async function pullCloudState({ force = false } = {}) {
   if (!canUseCloud()) return;
 
   try {
-    setSyncStatus("下载中...");
+    setSyncStatus("同步中...");
     const response = await fetch(`https://api.github.com/gists/${state.sync.gistId}`, {
       headers: getGithubHeaders(),
     });
@@ -1039,13 +1141,24 @@ async function pullCloudState({ force = false } = {}) {
     const file = gist.files?.["licai-data.json"];
     if (!file?.content) throw new Error("云端无数据");
     const cloudState = normalizeState(JSON.parse(file.content));
-    if (!force && cloudState.sync.updatedAt <= state.sync.updatedAt) {
-      setSyncStatus(`无更新 ${formatSyncTime(state.sync.updatedAt)}`);
-      return;
+    const cloudUpdatedAt = Number(cloudState.sync?.updatedAt || 0);
+
+    if (force) {
+      // 手动拉取：仍然保护——如果云端比本地旧，提示但不覆盖
+      if (cloudUpdatedAt < state.sync.updatedAt) {
+        setSyncStatus(`云端较旧，未覆盖（本地 ${formatSyncTime(state.sync.updatedAt)}）`);
+        return;
+      }
+    } else {
+      // 自动同步：云端必须严格更新才拉取
+      if (cloudUpdatedAt <= state.sync.updatedAt) {
+        setSyncStatus(`已是最新 ${formatSyncTime(state.sync.updatedAt)}`);
+        return;
+      }
     }
     rememberState();
     applyCloudState(cloudState);
-    setSyncStatus(`已恢复 ${formatSyncTime(state.sync.updatedAt)}`);
+    setSyncStatus(`已同步 ${formatSyncTime(state.sync.updatedAt)}`);
   } catch (error) {
     setSyncStatus(error.message, false);
   }
@@ -1065,7 +1178,8 @@ document.addEventListener("visibilitychange", () => {
 });
 
 window.addEventListener("focus", () => pullCloudState());
-setInterval(() => pullCloudState(), 5_000);
+// 温和轮询：60 秒一次（替代原来激进的 5 秒）
+setInterval(() => pullCloudState(), 60_000);
 
 document.addEventListener("click", (event) => {
   if (event.target.classList.contains("inline-number-input")) return;
