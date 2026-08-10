@@ -164,6 +164,12 @@ class DrawingApp {
   }
 
   bindToolbarEvents() {
+    const closeBtn = document.getElementById('closeDrawingBtn');
+    if (closeBtn) closeBtn.addEventListener('click', () => {
+      if (typeof switchView === 'function') switchView('calculatorView');
+      else document.getElementById('drawingView').classList.remove('active');
+    });
+
     document.querySelectorAll('.tool-btn[data-tool]').forEach((btn) => {
       btn.addEventListener('click', () => {
         this.setTool(btn.dataset.tool);

@@ -76,7 +76,7 @@
   padding-top: max(8px, env(safe-area-inset-top));
   padding-bottom: max(8px, env(safe-area-inset-bottom));
 }
-.drawing-view.active {
+.app-view.drawing-view.active {
   display: flex;
 }
 
@@ -1621,7 +1621,7 @@ label {
   position: fixed;
   left: 50%;
   bottom: max(16px, env(safe-area-inset-bottom));
-  z-index: 20;
+  z-index: 40;
   display: flex;
   align-items: stretch;
   gap: 6px;
