@@ -74,7 +74,7 @@
   z-index: 30;
   background: var(--bg);
   padding-top: max(8px, env(safe-area-inset-top));
-  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  padding-bottom: max(96px, calc(env(safe-area-inset-bottom) + 88px));
 }
 .app-view.drawing-view.active {
   display: flex;
@@ -82,10 +82,7 @@
 
 .drawing-toolbar {
   display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  flex-wrap: wrap;
   gap: 4px;
   padding: 6px 8px;
   background: rgba(14, 17, 25, 0.92);
@@ -97,12 +94,8 @@
   align-items: center;
   position: relative;
   z-index: 10;
-  touch-action: pan-x;
   flex-shrink: 0;
   width: calc(100% - 16px);
-}
-.drawing-toolbar::-webkit-scrollbar {
-  display: none;
 }
 
 .tool-group {
