@@ -69,8 +69,12 @@
   display: none;
   flex-direction: column;
   gap: 0;
-  height: calc(100vh - 120px);
-  padding-bottom: 0;
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: var(--bg);
+  padding-top: max(8px, env(safe-area-inset-top));
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
 }
 .drawing-view.active {
   display: flex;
@@ -78,20 +82,27 @@
 
 .drawing-toolbar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 4px;
+  padding: 6px 8px;
   background: rgba(14, 17, 25, 0.92);
   backdrop-filter: blur(20px) saturate(1.5);
   -webkit-backdrop-filter: blur(20px) saturate(1.5);
   border-radius: var(--r-lg);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  margin-bottom: 6px;
+  margin: 0 8px 4px;
   align-items: center;
   position: relative;
   z-index: 10;
-  touch-action: auto;
+  touch-action: pan-x;
   flex-shrink: 0;
+  width: calc(100% - 16px);
+}
+.drawing-toolbar::-webkit-scrollbar {
+  display: none;
 }
 
 .tool-group {
@@ -203,6 +214,7 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: #0e1119;
   position: relative;
+  margin: 0 8px;
 }
 
 #drawingCanvas {
@@ -210,6 +222,58 @@
   width: 100%;
   height: 100%;
   touch-action: none;
+}
+
+/* 浮动操作栏（选中元素时） */
+.floating-action-bar {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  background: rgba(14, 17, 25, 0.92);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border-radius: var(--r-full);
+  border: 1px solid rgba(94, 234, 212, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  z-index: 15;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+.floating-action-bar.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+.fab-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.fab-btn:active {
+  transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.fab-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 html {

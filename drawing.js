@@ -110,13 +110,35 @@ class DrawingApp {
     this.canvas.addEventListener('pointerup', (e) => this.onPointerUp(e));
     this.canvas.addEventListener('pointercancel', (e) => this.onPointerUp(e));
 
-    // 双指缩放
-    this.canvas.addEventListener('touchmove', (e) => {
+    // 双指缩放 — 用 touch 事件独立管理，避免 pointer 交叉干扰
+    this.canvas.addEventListener('touchstart', (e) => {
       if (e.touches.length === 2) {
+        e.preventDefault();
+        this._pinchActive = true;
+        this._lastPinchDist = null; // 每次双指落下都重置基准
+        // 中断正在进行的单指绘制
+        if (this.isDrawing) {
+          this.isDrawing = false;
+          this.currentPath = null;
+          this.previewEl = null;
+        }
+        this.onPinch(e.touches);
+      }
+    }, { passive: false });
+
+    this.canvas.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2 && this._pinchActive) {
         e.preventDefault();
         this.onPinch(e.touches);
       }
     }, { passive: false });
+
+    this.canvas.addEventListener('touchend', (e) => {
+      if (e.touches.length < 2) {
+        this._pinchActive = false;
+        this._lastPinchDist = null;
+      }
+    }, { passive: true });
 
     // 滚轮缩放（桌面端）
     this.canvas.addEventListener('wheel', (e) => {
@@ -194,14 +216,27 @@ class DrawingApp {
   }
 
   onPointerDown(e) {
-    // 双指时不处理单指
-    if (e.pointerType === 'touch' && this._pinching) return;
+    // 双指缩放进行中，忽略单指
+    if (e.pointerType === 'touch' && this._pinchActive) return;
 
     this.canvas.setPointerCapture(e.pointerId);
     const sp = this.getPos(e);
     this.lastPointer = sp;
     this.startPos = sp;
     const wp = this.screenToWorld(sp.x, sp.y);
+
+    // 1) 先检测是否点击了选中元素的缩放手柄
+    if (this.selectedId !== null && this.currentTool === 'select') {
+      const handle = this._getHandleAt(wp.x, wp.y);
+      if (handle) {
+        this.isResizing = true;
+        this.resizeHandle = handle;
+        this.resizeStartBB = this._bbox(this.getElementById(this.selectedId));
+        this.resizeStartWP = wp;
+        this._pushUndoSnapshot();
+        return;
+      }
+    }
 
     // 选择工具时点击空白则进入平移
     if (this.currentTool === 'select') {
@@ -216,6 +251,7 @@ class DrawingApp {
         this.isPanning = true;
       }
       this.render();
+      this._updateFloatingBar();
       return;
     }
 
@@ -255,6 +291,14 @@ class DrawingApp {
   onPointerMove(e) {
     const sp = this.getPos(e);
 
+    // 缩放元素
+    if (this.isResizing && this.selectedId !== null) {
+      const wp = this.screenToWorld(sp.x, sp.y);
+      this._resizeElement(wp);
+      this.render();
+      return;
+    }
+
     // 平移画布
     if (this.isPanning) {
       this.offsetX += sp.x - this.lastPointer.x;
@@ -269,8 +313,7 @@ class DrawingApp {
       const wp = this.screenToWorld(sp.x, sp.y);
       const el = this.getElementById(this.selectedId);
       if (el) {
-        el.x = wp.x - this.dragOffset.x;
-        el.y = wp.y - this.dragOffset.y;
+        this._moveElement(el, wp.x - this.dragOffset.x, wp.y - this.dragOffset.y);
         this.render();
       }
       return;
@@ -293,8 +336,14 @@ class DrawingApp {
   }
 
   onPointerUp(e) {
+    if (this.isResizing) {
+      this.isResizing = false;
+      this.resizeHandle = null;
+      this.save();
+      return;
+    }
     if (this.isPanning) { this.isPanning = false; return; }
-    if (this.isDragging) { this.isDragging = false; this.save(); return; }
+    if (this.isDragging) { this.isDragging = false; this.save(); this._updateFloatingBar(); return; }
 
     if (!this.isDrawing) return;
     this.isDrawing = false;
@@ -335,7 +384,6 @@ class DrawingApp {
       this.zoomAt(screenCX, screenCY, ratio);
     }
     this._lastPinchDist = dist;
-    this._pinching = true;
   }
 
   zoomAt(screenX, screenY, factor) {
@@ -429,6 +477,7 @@ class DrawingApp {
     this.pushUndo();
     this.elements = this.elements.filter((el) => el.id !== this.selectedId);
     this.selectedId = null;
+    this._updateFloatingBar();
     this.save();
     this.render();
   }
@@ -444,6 +493,7 @@ class DrawingApp {
     this.redoStack.push(JSON.stringify(this.elements));
     this.elements = JSON.parse(this.undoStack.pop());
     this.selectedId = null;
+    this._updateFloatingBar();
     this.save();
     this.render();
   }
@@ -453,6 +503,7 @@ class DrawingApp {
     this.undoStack.push(JSON.stringify(this.elements));
     this.elements = JSON.parse(this.redoStack.pop());
     this.selectedId = null;
+    this._updateFloatingBar();
     this.save();
     this.render();
   }
@@ -464,6 +515,7 @@ class DrawingApp {
     this.currentTool = tool;
     this.selectedId = null;
     this.canvas.style.cursor = tool === 'select' ? 'default' : 'crosshair';
+    this._updateFloatingBar();
     this.render();
   }
 
@@ -608,18 +660,153 @@ class DrawingApp {
     this.ctx.strokeRect(bb.x - pad, bb.y - pad, bb.w + pad * 2, bb.h + pad * 2);
     this.ctx.setLineDash([]);
 
-    // 四角手柄
-    const hs = 5 / this.scale;
-    const corners = [
-      [bb.x - pad, bb.y - pad],
-      [bb.x + bb.w + pad, bb.y - pad],
-      [bb.x - pad, bb.y + bb.h + pad],
-      [bb.x + bb.w + pad, bb.y + bb.h + pad],
-    ];
+    // 四角手柄（更大，方便触摸）
+    const handles = this._handleWorldPos(bb);
+    const hs = 7 / this.scale;
     this.ctx.fillStyle = '#5eead4';
-    corners.forEach(([cx, cy]) => {
-      this.ctx.fillRect(cx - hs, cy - hs, hs * 2, hs * 2);
+    this.ctx.strokeStyle = '#0e1119';
+    this.ctx.lineWidth = 1.5 / this.scale;
+    Object.values(handles).forEach((pos) => {
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x, pos.y, hs, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.stroke();
     });
+  }
+
+  // ── 选中元素的操作辅助 ──
+
+  _handleWorldPos(bb) {
+    const pad = 6 / this.scale;
+    return {
+      nw: { x: bb.x - pad, y: bb.y - pad },
+      ne: { x: bb.x + bb.w + pad, y: bb.y - pad },
+      sw: { x: bb.x - pad, y: bb.y + bb.h + pad },
+      se: { x: bb.x + bb.w + pad, y: bb.y + bb.h + pad },
+    };
+  }
+
+  _getHandleAt(wx, wy) {
+    if (this.selectedId === null) return null;
+    const el = this.getElementById(this.selectedId);
+    if (!el) return null;
+    const bb = this._bbox(el);
+    const handles = this._handleWorldPos(bb);
+    const hs = 14 / this.scale; // 14px 屏幕触控半径
+    for (const [name, pos] of Object.entries(handles)) {
+      if (Math.abs(wx - pos.x) < hs && Math.abs(wy - pos.y) < hs) return name;
+    }
+    return null;
+  }
+
+  _moveElement(el, newX, newY) {
+    if (el.type === 'pen') {
+      // 移动所有点
+      const bb = this._bbox(el);
+      const dx = newX - bb.x;
+      const dy = newY - bb.y;
+      el.points = el.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
+    } else {
+      el.x = newX;
+      el.y = newY;
+    }
+  }
+
+  _resizeElement(wp) {
+    const el = this.getElementById(this.selectedId);
+    if (!el || !this.resizeStartBB) return;
+    const sBB = this.resizeStartBB;
+    const sWP = this.resizeStartWP;
+    const handle = this.resizeHandle;
+
+    // 新的边界框（世界坐标）
+    let minX = sBB.x, minY = sBB.y, maxX = sBB.x + sBB.w, maxY = sBB.y + sBB.h;
+    if (handle === 'se' || handle === 'ne') maxX = sBB.x + sBB.w + (wp.x - sWP.x);
+    if (handle === 'sw' || handle === 'nw') minX = sBB.x + (wp.x - sWP.x);
+    if (handle === 'se' || handle === 'sw') maxY = sBB.y + sBB.h + (wp.y - sWP.y);
+    if (handle === 'ne' || handle === 'nw') minY = sBB.y + (wp.y - sWP.y);
+
+    // 防止反转（宽高为负）
+    if (maxX < minX) [minX, maxX] = [maxX, minX];
+    if (maxY < minY) [minY, maxY] = [maxY, minY];
+
+    const newW = Math.max(5, maxX - minX);
+    const newH = Math.max(5, maxY - minY);
+    const oldW = Math.max(1, sBB.w);
+    const oldH = Math.max(1, sBB.h);
+    const sx = newW / oldW;
+    const sy = newH / oldH;
+
+    if (el.type === 'pen') {
+      // 按比例缩放所有点
+      el.points = el.points.map(p => ({
+        x: minX + (p.x - sBB.x) * sx,
+        y: minY + (p.y - sBB.y) * sy,
+      }));
+    } else if (el.type === 'text') {
+      // 文字缩放字号
+      const oldFS = el.fontSize || 20;
+      el.fontSize = Math.max(8, oldFS * sy);
+      el.x = minX;
+      el.y = minY + (el.fontSize || 20);
+    } else {
+      el.x = minX;
+      el.y = minY;
+      el.width = newW;
+      el.height = newH;
+    }
+  }
+
+  _pushUndoSnapshot() {
+    this.undoStack.push(JSON.stringify(this.elements));
+    if (this.undoStack.length > 50) this.undoStack.shift();
+    this.redoStack = [];
+  }
+
+  // ── 浮动操作栏（选中元素时显示删除/复制按钮）──
+  _updateFloatingBar() {
+    let bar = document.getElementById('floatingActionBar');
+    if (this.selectedId === null) {
+      if (bar) bar.classList.remove('show');
+      return;
+    }
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'floatingActionBar';
+      bar.className = 'floating-action-bar';
+      bar.innerHTML = `
+        <button class="fab-btn" id="fabDelete" title="删除选中">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+        <button class="fab-btn" id="fabDuplicate" title="复制选中">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      `;
+      document.getElementById('drawingView').appendChild(bar);
+      bar.querySelector('#fabDelete').addEventListener('click', () => this.deleteSelected());
+      bar.querySelector('#fabDuplicate').addEventListener('click', () => this.duplicateSelected());
+    }
+    bar.classList.add('show');
+  }
+
+  duplicateSelected() {
+    if (this.selectedId === null) return;
+    const el = this.getElementById(this.selectedId);
+    if (!el) return;
+    this.pushUndo();
+    const clone = JSON.parse(JSON.stringify(el));
+    clone.id = this._uid();
+    if (clone.type === 'pen') {
+      clone.points = clone.points.map(p => ({ x: p.x + 20, y: p.y + 20 }));
+    } else {
+      clone.x += 20;
+      clone.y += 20;
+    }
+    this.elements.push(clone);
+    this.selectedId = clone.id;
+    this.save();
+    this.render();
+    this._updateFloatingBar();
   }
 
   _bbox(el) {
@@ -676,6 +863,7 @@ class DrawingApp {
     this.scale = 1;
     this.offsetX = 0;
     this.offsetY = 0;
+    this._updateFloatingBar();
     this.save();
     this.render();
   }
