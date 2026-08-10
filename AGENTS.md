@@ -36,16 +36,16 @@
 
 ## 当前版本
 
-- **PWA 缓存**：`v51`
-- **HTML asset 版本**：`?v=51`（styles.css / app.js / drawing.js）
-- **最新 commit**：`64b1ace` — Repay plan 12 months + paid toggle
+- **PWA 缓存**：`v52`
+- **HTML asset 版本**：`?v=52`（styles.css / app.js / drawing.js）
+- **最新 commit**：`645749d` — Drawing mobile fixes
 
 ## ⚠️ 修改规则（每次改动必须遵守）
 
-1. **改 CSS/JS 后**：递增 cache 版本（`v50`→`v51`），同步更新 3 处：
+1. **改 CSS/JS 后**：递增 cache 版本（`v51`→`v52`），同步更新 3 处：
    - `service-worker.js` 的 `cacheName`
-   - `service-worker.js` 的 assets 列表（`?v=51`）
-   - `index.html` 的 `<link>` / `<script>` 标签（`?v=51`）
+   - `service-worker.js` 的 assets 列表（`?v=52`）
+   - `index.html` 的 `<link>` / `<script>` 标签（`?v=52`）
 2. **验证**：用 Node 脚本做静态检查（语法 + 关键内容存在性），确保通过后再推送
 3. **推送**：`git push` 被墙（git insteadOf 镜像规则），用 **GitHub REST API** 推送：
    - 脚本模板：写 Python 脚本到 `D:\tmp\hermes-push.py`，用后即删
@@ -86,10 +86,13 @@ pen（画笔）、rectangle、circle、line（直线）、arrow、text、select�
 
 ### 核心机制
 - **世界坐标系**：`screenToWorld()` 转换，支持 `scale` / `offsetX` / `offsetY`
-- **缩放**：双指捏合（`onPinch`）、滚轮（`wheel`）、工具栏按钮（`zoomInBtn`/`zoomOutBtn`）
+- **全屏画布**：`.drawing-view` 用 `position:fixed; inset:0` 全屏覆盖（v52+），脱离 app-shell padding
+- **工具栏**：`flex-wrap:nowrap; overflow-x:auto` 横向滚动，不换行（v52+，解决手机端重叠）
+- **缩放**：双指捏合（`onPinch`，v52+ 重写 touchstart/touchmove/touchend 三阶段管理 `_pinchActive`/`_lastPinchDist`）、滚轮、工具栏按钮
 - **平移**：select 工具下点击空白 → 拖拽平移画布
 - **命中检测**：12px 屏幕空间容差，`_distToSegment` 用于 pen/line/arrow
-- **选中框**：虚线边框 + 四角拖拽手柄（`drawSelection`）
+- **选中框**：虚线边框 + 四角圆形手柄（`drawSelection`），四角可拖拽缩放（`_getHandleAt`/`_resizeElement`，v52+）
+- **浮动操作栏**：选中元素时底部弹出删除/复制按钮（`_updateFloatingBar`，v52+，手机端友好）
 - **撤销/重做**：50 步栈，Ctrl+Z / Ctrl+Y
 - **网格切换**：`toggleGridBtn`，暗色网格 `rgba(255,255,255,0.04)`
 - **颜色**：stroke/fill 颜色选择器作用于所有工具（包括 text/arrow）
@@ -111,6 +114,7 @@ pen（画笔）、rectangle、circle、line（直线）、arrow、text、select�
 
 | 日期 | Commit | 内容 |
 |------|--------|------|
+| 2026-07-30 | `645749d` | 绘图手机端修复：全屏画布、pinch缩放bug、四角resize手柄+浮动删除/复制栏、工具栏横向滚动 |
 | 2026-07-30 | `64b1ace` | 还款计划：12个月视图 + 每月未还/✓已还切换按钮（进度=已还月份累计） |
 | 2026-07-30 | `80e2ab3` | 还款计划弹窗：删手动按钮，改自动计算(逐月计划累计)，红蓝两路每月可自定义金额 |
 | 2026-07-29 | `6cb7965` | 修复4问题：假期颜色(红+琥珀)、已还进度条逻辑(本月已还/待还)、自定义分期行、云同步覆盖保护 |
