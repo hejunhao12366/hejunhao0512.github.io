@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=53" />
+    <link rel="stylesheet" href="./styles.css?v=54" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
@@ -88,7 +88,7 @@
           </div>
         </section>
 
-        <section class="month-panel app-card" aria-labelledby="repayTitle">
+        <section class="month-panel app-card school-only" aria-labelledby="repayTitle">
           <div class="section-kicker">本月</div>
           <h2 id="repayTitle">还款后生活费</h2>
           <div class="formula-line large" id="repayFormula"></div>
@@ -393,8 +393,8 @@
       </nav>
     </main>
 
-    <script src="./app.js?v=53"></script>
-    <script src="./drawing.js?v=53"></script>
+    <script src="./app.js?v=54"></script>
+    <script src="./drawing.js?v=54"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first
