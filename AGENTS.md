@@ -33,6 +33,14 @@
 | `service-worker.js` | PWA 离线缓存。版本号格式 `mobile-ledger-v{N}` |
 | `manifest.webmanifest` | PWA 清单 |
 | `icon.svg` | 渐变 SVG 图标 |
+| `dev-preview.html` | **开发预览工具（gitignore，勿推送）**：iPhone 14 Pro 393×852 等比手机壳，同源 iframe 注入安全区模拟（顶59/底34px），还原灵动岛/状态栏/Home条，自动清 SW 缓存+服务器自愈 |
+
+## 本地预览（开发调试）
+
+- 启动：`启动iPhone预览.ps1`（或 `python -m http.server 8770`）
+- 访问：`http://localhost:8770/dev-preview.html`（手机壳版，1:1 还原 iPhone 14 Pro）
+- 或直接 `http://localhost:8770/index.html`（裸页面）
+- 真机：iPhone 连同一 Wi-Fi 访问 `http://电脑IP:8770`
 
 ## 当前版本
 
