@@ -23,7 +23,7 @@ class DrawingApp {
 
     // ── 工具 ──
     this.currentTool = 'pen'; // pen, rectangle, circle, line, arrow, text, select
-    this.strokeColor = '#5eead4';
+    this.strokeColor = '#0d9488';
     this.fillColor = 'transparent';
     this.strokeWidth = 2;
 
@@ -538,8 +538,8 @@ class DrawingApp {
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.ctx.clearRect(0, 0, W, H);
 
-    // 背景色
-    this.ctx.fillStyle = '#0e1119';
+    // 背景色（白色面板）
+    this.ctx.fillStyle = '#ffffff';
     this.ctx.fillRect(0, 0, W, H);
 
     // 应用世界坐标变换
@@ -567,7 +567,7 @@ class DrawingApp {
     // 缩放指示器（屏幕空间）
     this.ctx.save();
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    this.ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    this.ctx.fillStyle = 'rgba(0,0,0,0.35)';
     this.ctx.font = '11px sans-serif';
     this.ctx.textAlign = 'right';
     this.ctx.fillText(`${Math.round(this.scale * 100)}%`, W - 12, H - 12);
@@ -584,7 +584,7 @@ class DrawingApp {
     const x1 = Math.floor(wx1 / size) * size;
     const y1 = Math.floor(wy1 / size) * size;
 
-    this.ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    this.ctx.strokeStyle = 'rgba(0,0,0,0.10)';
     this.ctx.lineWidth = 1 / this.scale;
 
     for (let x = x1; x <= wx2; x += size) {
@@ -603,7 +603,7 @@ class DrawingApp {
 
   drawElement(el) {
     const opts = {
-      stroke: el.strokeColor || '#5eead4',
+      stroke: el.strokeColor || '#0d9488',
       strokeWidth: el.strokeWidth || 2,
       roughness: 1.2,
       bowing: 1,
@@ -651,7 +651,7 @@ class DrawingApp {
 
     if (el.type === 'text') {
       this.ctx.font = `${el.fontSize || 20}px "KaiTi","STKaiti",serif`;
-      this.ctx.fillStyle = el.color || '#5eead4';
+      this.ctx.fillStyle = el.color || '#0d9488';
       this.ctx.fillText(el.text, el.x, el.y);
       return;
     }
@@ -660,7 +660,7 @@ class DrawingApp {
   drawSelection(el) {
     const bb = this._bbox(el);
     const pad = 6 / this.scale;
-    this.ctx.strokeStyle = '#5eead4';
+    this.ctx.strokeStyle = '#0d9488';
     this.ctx.lineWidth = 1.5 / this.scale;
     this.ctx.setLineDash([6 / this.scale, 4 / this.scale]);
     this.ctx.strokeRect(bb.x - pad, bb.y - pad, bb.w + pad * 2, bb.h + pad * 2);
@@ -669,8 +669,8 @@ class DrawingApp {
     // 四角手柄（更大，方便触摸）
     const handles = this._handleWorldPos(bb);
     const hs = 7 / this.scale;
-    this.ctx.fillStyle = '#5eead4';
-    this.ctx.strokeStyle = '#0e1119';
+    this.ctx.fillStyle = '#0d9488';
+    this.ctx.strokeStyle = '#ffffff';
     this.ctx.lineWidth = 1.5 / this.scale;
     Object.values(handles).forEach((pos) => {
       this.ctx.beginPath();

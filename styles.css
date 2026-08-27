@@ -82,7 +82,10 @@
 
 .drawing-toolbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   gap: 4px;
   padding: 6px 8px;
   background: rgba(14, 17, 25, 0.92);
@@ -94,8 +97,12 @@
   align-items: center;
   position: relative;
   z-index: 10;
+  touch-action: pan-x;
   flex-shrink: 0;
   width: calc(100% - 16px);
+}
+.drawing-toolbar::-webkit-scrollbar {
+  display: none;
 }
 
 .tool-group {
@@ -104,6 +111,7 @@
   align-items: center;
   padding-right: 6px;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
 }
 .tool-group:last-child {
   border-right: none;
@@ -172,7 +180,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #5eead4;
+  background: #0d9488;
   border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -198,14 +206,14 @@
   background: rgba(255, 255, 255, 0.12);
 }
 
-/* 画布容器 */
+/* 画布容器 — 白色面板 */
 .drawing-canvas-wrap {
   flex: 1;
   min-height: 0;
   border-radius: var(--r-lg);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: #0e1119;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #ffffff;
   position: relative;
   margin: 0 8px;
 }
