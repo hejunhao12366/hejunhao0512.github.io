@@ -44,16 +44,16 @@
 
 ## 当前版本
 
-- **PWA 缓存**：`v54`
-- **HTML asset 版本**：`?v=54`（styles.css / app.js / drawing.js）
-- **最新 commit**：`1f72c44` — 假期模式隐藏「还款后生活费」模块
+- **PWA 缓存**：`v55`
+- **HTML asset 版本**：`?v=55`（styles.css / app.js / drawing.js）
+- **最新 commit**：`c302e1d` — 绘图：工具栏单行滚动(修复重叠) + 白色画布面板
 
 ## ⚠️ 修改规则（每次改动必须遵守）
 
-1. **改 CSS/JS 后**：递增 cache 版本（`v53`→`v54`），同步更新 3 处：
+1. **改 CSS/JS 后**：递增 cache 版本（`v54`→`v55`），同步更新 3 处：
    - `service-worker.js` 的 `cacheName`
-   - `service-worker.js` 的 assets 列表（`?v=54`）
-   - `index.html` 的 `<link>` / `<script>` 标签（`?v=54`）
+   - `service-worker.js` 的 assets 列表（`?v=55`）
+   - `index.html` 的 `<link>` / `<script>` 标签（`?v=55`）
 2. **验证**：用 Node 脚本做静态检查（语法 + 关键内容存在性），确保通过后再推送
 3. **推送**：`git push` 被墙（git insteadOf 镜像规则），用 **GitHub REST API** 推送：
    - 脚本模板：写 Python 脚本到 `D:\tmp\hermes-push.py`，用后即删
@@ -122,6 +122,7 @@ pen（画笔）、rectangle、circle、line（直线）、arrow、text、select�
 
 | 日期 | Commit | 内容 |
 |------|--------|------|
+| 2026-08-27 | `c302e1d` | 绘图：工具栏改单行横向滚动(修复按键重叠) + 画布改白色面板(网格/选中框/默认笔色适配白底) |
 | 2026-08-10 | `1f72c44` | 假期模式：隐藏「还款后生活费」模块（school-only），总欠/还款计划保留 |
 | 2026-08-10 | `645749d` | 绘图手机端修复：全屏画布、pinch缩放bug、四角resize手柄+浮动删除/复制栏、工具栏横向滚动 |
 | 2026-07-30 | `64b1ace` | 还款计划：12个月视图 + 每月未还/✓已还切换按钮（进度=已还月份累计） |
