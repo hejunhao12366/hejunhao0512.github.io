@@ -182,9 +182,17 @@
   border: 2px dashed rgba(255, 255, 255, 0.3);
 }
 
+.stroke-select-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
 .stroke-select {
   height: 36px;
-  padding: 0 8px;
+  width: 52px;
+  min-width: 0;
+  padding: 0 18px 0 6px;
   border: none;
   border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.06);
@@ -194,6 +202,22 @@
   font-weight: 600;
   flex-shrink: 0;
   outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: center;
+}
+.stroke-select-arrow {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--text-2);
+  pointer-events: none;
+  opacity: 0.7;
 }
 .stroke-select:active {
   background: rgba(255, 255, 255, 0.12);

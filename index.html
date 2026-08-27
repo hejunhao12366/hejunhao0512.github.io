@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=56" />
+    <link rel="stylesheet" href="./styles.css?v=57" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
@@ -213,11 +213,14 @@
               <input type="color" id="fillColorPicker" value="transparent">
               <span class="color-dot fill-dot" id="fillColorDot"></span>
             </label>
-            <select id="strokeWidthSelect" class="stroke-select" title="粗细">
-              <option value="1">细</option>
-              <option value="2" selected>中</option>
-              <option value="4">粗</option>
-            </select>
+            <div class="stroke-select-wrap">
+              <select id="strokeWidthSelect" class="stroke-select" title="粗细">
+                <option value="1">细</option>
+                <option value="2" selected>中</option>
+                <option value="4">粗</option>
+              </select>
+              <span class="stroke-select-arrow"></span>
+            </div>
           </div>
 
           <div class="tool-group">
@@ -393,8 +396,8 @@
       </nav>
     </main>
 
-    <script src="./app.js?v=56"></script>
-    <script src="./drawing.js?v=56"></script>
+    <script src="./app.js?v=57"></script>
+    <script src="./drawing.js?v=57"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first
