@@ -82,11 +82,8 @@
 
 .drawing-toolbar {
   display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 6px;
   padding: 6px 8px;
   background: rgba(14, 17, 25, 0.92);
   backdrop-filter: blur(20px) saturate(1.5);
@@ -97,12 +94,8 @@
   align-items: center;
   position: relative;
   z-index: 10;
-  touch-action: pan-x;
   flex-shrink: 0;
   width: calc(100% - 16px);
-}
-.drawing-toolbar::-webkit-scrollbar {
-  display: none;
 }
 
 .tool-group {
