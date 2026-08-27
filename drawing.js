@@ -250,7 +250,13 @@ class DrawingApp {
       if (el) {
         this.selectedId = el.id;
         this.isDragging = true;
-        this.dragOffset = { x: wp.x - el.x, y: wp.y - el.y };
+        // pen 没有 x/y，用包围盒左上角做拖拽基准（_moveElement 内部同样按 bbox 偏移）
+        if (el.type === 'pen') {
+          const bb = this._bbox(el);
+          this.dragOffset = { x: wp.x - bb.x, y: wp.y - bb.y };
+        } else {
+          this.dragOffset = { x: wp.x - el.x, y: wp.y - el.y };
+        }
       } else {
         // 空白区域 → 平移画布
         this.selectedId = null;
