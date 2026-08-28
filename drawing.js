@@ -744,18 +744,23 @@ class DrawingApp {
       nw: { x: sBB.x + sBB.w, y: sBB.y + sBB.h },
     }[handle];
 
-    // 比例式缩放：倍率 = 当前到锚点距离 ÷ 按下时到锚点距离
-    // 拖到 2 倍远 = 放大 2 倍，直观且对小元素同样精准
-    const d0 = Math.max(8, Math.hypot(sWP.x - anchor.x, sWP.y - anchor.y));
-    const d1 = Math.hypot(wp.x - anchor.x, wp.y - anchor.y);
-    let k = d1 / d0;
-    k = Math.max(0.05, Math.min(20, k));   // 单次拖动倍率钳制
+    // 被拖手柄的初始位置（bbox 角）
+    const handleStart = {
+      se: { x: sBB.x + sBB.w, y: sBB.y + sBB.h },
+      ne: { x: sBB.x + sBB.w, y: sBB.y },
+      sw: { x: sBB.x, y: sBB.y + sBB.h },
+      nw: { x: sBB.x, y: sBB.y },
+    }[handle];
 
+    // 角跟手：新角位置 = 手指当前位置 - 按下时偏移
+    // 按下瞬间 corner == handleStart → 零跳变；拖动时角精确跟随手指
+    const cornerX = wp.x - (sWP.x - handleStart.x);
+    const cornerY = wp.y - (sWP.y - handleStart.y);
+
+    // 新宽高（对角锚定 + 钳制 24~4000）
     const MIN = 24, MAX = 4000;
-    const newW = Math.min(MAX, Math.max(MIN, sBB.w * k));
-    const newH = Math.min(MAX, Math.max(MIN, sBB.h * k));
-    const sx = newW / Math.max(1, sBB.w);
-    const sy = newH / Math.max(1, sBB.h);
+    const newW = Math.min(MAX, Math.max(MIN, Math.abs(cornerX - anchor.x)));
+    const newH = Math.min(MAX, Math.max(MIN, Math.abs(cornerY - anchor.y)));
 
     // 按锚点重算边界框
     let minX, minY;
@@ -763,6 +768,9 @@ class DrawingApp {
     else if (handle === 'ne') { minX = anchor.x; minY = anchor.y - newH; }
     else if (handle === 'sw') { minX = anchor.x - newW; minY = anchor.y; }
     else { minX = anchor.x - newW; minY = anchor.y - newH; } // nw
+
+    const sx = newW / Math.max(1, sBB.w);
+    const sy = newH / Math.max(1, sBB.h);
 
     if (el.type === 'pen') {
       // 按比例缩放所有点
@@ -773,7 +781,7 @@ class DrawingApp {
     } else if (el.type === 'text') {
       // 文字缩放字号
       const oldFS = el.fontSize || 20;
-      el.fontSize = Math.max(10, Math.min(200, oldFS * k));
+      el.fontSize = Math.max(10, Math.min(200, oldFS * sy));
       el.x = minX;
       el.y = minY + (el.fontSize || 20);
     } else {
