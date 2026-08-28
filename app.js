@@ -1325,12 +1325,14 @@ $("#redoButton").addEventListener("click", () => {
   restoreState(redoStack.pop());
 });
 
+// 隐私模式全局标志（var 提升，避免 fmtMoney 在 let 声明前被调用触发 TDZ）
+var privacyMode = false;
+
 renderAll();
 setInterval(renderClock, 30_000);
 
 
-// ── 隐私模式：隐藏总余额/总欠等金额 ──
-let privacyMode = false;
+// ── 隐私模式：隐藏总余额/总欠等金额（var 声明在文件顶部，避免 TDZ）──
 try { privacyMode = localStorage.getItem("mobile-ledger-privacy-v1") === "1"; } catch (e) {}
 
 function fmtMoney(v) {
