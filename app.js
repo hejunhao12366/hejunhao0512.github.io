@@ -536,9 +536,6 @@ function textSpan(value) {
 
 function renderForms() {
   const set = (sel, val) => { const el = $(sel); if (el) el.value = val; };
-  set("#installmentAmountInput", state.installmentAmount);
-  set("#installmentMonthsInput", state.installmentMonths);
-  set("#installmentNoteInput", state.installmentNote);
   set("#paydayDayInput", state.paydayDay);
   set("#holidayDaysInput", state.holidayDays);
   set("#syncTokenInput", state.sync.token);
@@ -548,9 +545,6 @@ function renderForms() {
 function syncDebtForm({ remember = true } = {}) {
   if (remember) rememberState();
   const num = (sel) => Number($(sel)?.value || 0);
-  state.installmentAmount = num("#installmentAmountInput");
-  state.installmentMonths = Math.max(1, num("#installmentMonthsInput") || 1);
-  state.installmentNote = $("#installmentNoteInput")?.value.trim() || "";
   state.paydayDay = clampPayday($("#paydayDayInput")?.value);
   const newHolidayDays = Math.max(1, Math.round(Number($("#holidayDaysInput")?.value || 30)));
   if (newHolidayDays !== state.holidayDays) {
