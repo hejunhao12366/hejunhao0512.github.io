@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=67" />
+    <link rel="stylesheet" href="./styles.css?v=68" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
@@ -261,29 +261,7 @@
 
 
 
-        <section class="app-card settings-card">
-          <div class="section-header">
-            <h2>特殊情况备注</h2>
-          </div>
-          <form id="noteForm2" class="settings-form">
-            <label class="wide">
-              日期
-              <input id="noteDateInput" type="date" required />
-            </label>
-            <label class="wide">
-              备注内容
-              <textarea id="noteTextInput" maxlength="80" placeholder="例如：临时省 300，改成 285/12"></textarea>
-            </label>
-            <button class="primary wide" type="submit" id="addNoteButton">添加备注</button>
-          </form>
-        </section>
 
-        <section class="timeline-section app-card settings-card" aria-labelledby="notesTitle">
-          <div class="section-header">
-            <h2 id="notesTitle">特殊情况</h2>
-          </div>
-          <div id="notesList" class="timeline"></div>
-        </section>
       </div>
 
       <nav class="bottom-nav" aria-label="主导航">
@@ -294,8 +272,8 @@
       </nav>
     </main>
 
-    <script src="./app.js?v=67"></script>
-    <script src="./drawing.js?v=67"></script>
+    <script src="./app.js?v=68"></script>
+    <script src="./drawing.js?v=68"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first

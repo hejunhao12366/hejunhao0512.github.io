@@ -164,7 +164,6 @@ function renderAll() {
   renderMode();
   renderDashboard();
   renderForms();
-  renderNotes();
   renderDailyRecords();
   updateHistoryButtons();
 }
@@ -544,7 +543,6 @@ function renderForms() {
   set("#holidayDaysInput", state.holidayDays);
   set("#syncTokenInput", state.sync.token);
   set("#syncGistInput", state.sync.gistId);
-  set("#noteDateInput", $("#noteDateInput")?.value || new Date().toISOString().slice(0, 10));
 }
 
 function syncDebtForm({ remember = true } = {}) {
@@ -578,28 +576,6 @@ function autoSaveFromForm(formSelector, sync) {
       renderDashboard();
     }, 350);
   });
-}
-
-function renderNotes() {
-  const notesList = $("#notesList");
-  notesList.innerHTML = "";
-
-  state.notes
-    .slice()
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .forEach((note) => {
-      const card = document.createElement("article");
-      card.className = "day-card";
-      const [, month, day] = note.date.split("-");
-      card.innerHTML = `
-        <div class="day-title">${Number(month)}.${Number(day)}</div>
-        <div class="entry-line">
-          <span class="entry-note">${escapeHtml(note.text)}</span>
-          <button class="delete-entry" type="button" aria-label="删除备注" data-id="${note.id}">×</button>
-        </div>
-      `;
-      notesList.append(card);
-    });
 }
 
 function renderDailyRecords() {
@@ -954,33 +930,6 @@ function renderMonthlyReport(records) {
 $("#debtForm").addEventListener("submit", (event) => {
   event.preventDefault();
   syncDebtForm();
-  saveState();
-  renderAll();
-});
-
-$("#noteForm2").addEventListener("submit", (event) => {
-  event.preventDefault();
-  const text = $("#noteTextInput").value.trim();
-  syncCloudForm();
-  if (!text) return;
-
-  rememberState();
-  state.notes.push({
-    id: createId(),
-    date: $("#noteDateInput").value,
-    text,
-  });
-  $("#noteTextInput").value = "";
-  saveState();
-  renderAll();
-});
-
-$("#notesList").addEventListener("click", (event) => {
-  const button = event.target.closest(".delete-entry");
-  if (!button) return;
-
-  rememberState();
-  state.notes = state.notes.filter((note) => note.id !== button.dataset.id);
   saveState();
   renderAll();
 });
