@@ -1046,11 +1046,6 @@ $("#clearRecordsButton").addEventListener("click", () => {
 
 document.querySelectorAll(".nav-item").forEach((button) => {
   button.addEventListener("click", () => {
-    // 绘图功能已替换为 Excalidraw 网站：点击直接跳转，不再使用本地绘图模块
-    if (button.dataset.view === "drawingView") {
-      window.open("https://excalidraw.com/", "_blank", "noopener");
-      return;
-    }
     switchView(button.dataset.view);
   });
 });
@@ -1079,11 +1074,6 @@ document.querySelectorAll(".mode-opt").forEach((button) => {
 });
 
 function switchView(viewId) {
-  // 绘图已替换为 Excalidraw：任何入口进入 drawingView 都跳转外部网站
-  if (viewId === "drawingView") {
-    window.open("https://excalidraw.com/", "_blank", "noopener");
-    return;
-  }
   const current = document.querySelector(".app-view.active");
   const next = document.getElementById(viewId);
   if (next === current || !next) return;
@@ -1410,4 +1400,205 @@ setInterval(renderClock, 30_000);
   const isLocal = host === "localhost" || host === "127.0.0.1" || /^192\.168\./.test(host);
   if (isLocal) v += " (本地)";
   tag.textContent = "当前版本：" + v + " · 若与最新不符，请清除浏览器网站数据后重开";
+})();
+
+// ── 网址导航（iTab 风格，替换原绘图 tab）──
+const LINKS_STORAGE_KEY = "mobile-ledger-links-v1";
+
+// 默认网址（首次使用）：绘图(Excalidraw) + 常用网站
+const DEFAULT_LINKS = [
+  { name: "绘图", url: "https://excalidraw.com/", emoji: "🎨", color: 0 },
+  { name: "哔哩哔哩", url: "https://www.bilibili.com/", emoji: "📺", color: 1 },
+  { name: "抖音", url: "https://www.douyin.com/", emoji: "📱", color: 2 },
+  { name: "淘宝", url: "https://www.taobao.com/", emoji: "🛒", color: 3 },
+  { name: "知乎", url: "https://www.zhihu.com/", emoji: "💬", color: 4 },
+  { name: "GitHub", url: "https://github.com/", emoji: "🐙", color: 5 },
+  { name: "DeepSeek", url: "https://chat.deepseek.com/", emoji: "🤖", color: 6 },
+  { name: "微信读书", url: "https://weread.qq.com/", emoji: "📚", color: 7 },
+  { name: "百度", url: "https://www.baidu.com/", emoji: "🔍", color: 8 },
+  { name: "微博", url: "https://weibo.com/", emoji: "📰", color: 9 },
+  { name: "iTab", url: "https://itab.link/", emoji: "🌐", color: 10 },
+];
+
+const LINK_COLORS = [
+  "#5eead4", "#818cf8", "#f472b6", "#fbbf24", "#34d399",
+  "#60a5fa", "#fb923c", "#a78bfa", "#f87171", "#2dd4bf",
+  "#e879f9", "#4ade80",
+];
+
+let navLinks = [];
+let editingLinkIndex = null;
+
+function loadNavLinks() {
+  try {
+    const raw = localStorage.getItem(LINKS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    navLinks = Array.isArray(parsed) ? parsed : DEFAULT_LINKS.map((l) => ({ ...l }));
+  } catch (e) {
+    navLinks = DEFAULT_LINKS.map((l) => ({ ...l }));
+  }
+}
+
+function saveNavLinks() {
+  try { localStorage.setItem(LINKS_STORAGE_KEY, JSON.stringify(navLinks)); } catch (e) {}
+}
+
+function renderLinksGrid() {
+  const grid = document.getElementById("linksGrid");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+  navLinks.forEach((link, i) => {
+    const item = document.createElement("div");
+    item.className = "link-item";
+
+    const icon = document.createElement("div");
+    icon.className = "link-icon";
+    icon.style.background = LINK_COLORS[link.color % LINK_COLORS.length] || "#5eead4";
+    const glyph = (link.emoji && link.emoji.trim()) || (link.name || "?").slice(0, 1);
+    icon.textContent = glyph;
+
+    const label = document.createElement("span");
+    label.className = "link-label";
+    label.textContent = link.name || "未命名";
+
+    item.appendChild(icon);
+    item.appendChild(label);
+
+    // 点击 → 跳转
+    item.addEventListener("click", () => {
+      if (!link.url) return;
+      window.open(link.url, "_blank", "noopener");
+    });
+
+    // 长按 → 编辑
+    let pressTimer = null;
+    const cancelPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+    item.addEventListener("touchstart", (e) => {
+      cancelPress();
+      pressTimer = setTimeout(() => {
+        e.preventDefault();
+        openLinkModal(i);
+      }, 500);
+    }, { passive: true });
+    item.addEventListener("touchend", cancelPress);
+    item.addEventListener("touchmove", cancelPress);
+    item.addEventListener("contextmenu", (e) => { e.preventDefault(); openLinkModal(i); });
+
+    grid.appendChild(item);
+  });
+
+  // 末尾「+」添加按钮
+  const addItem = document.createElement("div");
+  addItem.className = "link-item";
+  const addIcon = document.createElement("div");
+  addIcon.className = "link-icon link-icon-add";
+  addIcon.textContent = "+";
+  const addLabel = document.createElement("span");
+  addLabel.className = "link-label";
+  addLabel.textContent = "添加";
+  addItem.appendChild(addIcon);
+  addItem.appendChild(addLabel);
+  addItem.addEventListener("click", () => openLinkModal(-1));
+  grid.appendChild(addItem);
+}
+
+function openLinkModal(index) {
+  editingLinkIndex = index;
+  const overlay = document.getElementById("linkModalOverlay");
+  const title = document.getElementById("linkModalTitle");
+  const delBtn = document.getElementById("linkDeleteBtn");
+  const nameInput = document.getElementById("linkNameInput");
+  const urlInput = document.getElementById("linkUrlInput");
+  const emojiInput = document.getElementById("linkEmojiInput");
+  if (!overlay) return;
+
+  if (index >= 0 && navLinks[index]) {
+    title.textContent = "编辑网址";
+    nameInput.value = navLinks[index].name || "";
+    urlInput.value = navLinks[index].url || "";
+    emojiInput.value = navLinks[index].emoji || "";
+    delBtn.classList.remove("hidden");
+  } else {
+    title.textContent = "添加网址";
+    nameInput.value = "";
+    urlInput.value = "";
+    emojiInput.value = "";
+    delBtn.classList.add("hidden");
+  }
+  renderLinkColorRow(index >= 0 ? navLinks[index].color : 0);
+  overlay.classList.remove("hidden");
+}
+
+function closeLinkModal() {
+  const overlay = document.getElementById("linkModalOverlay");
+  if (overlay) overlay.classList.add("hidden");
+}
+
+function renderLinkColorRow(selected) {
+  const row = document.getElementById("linkColorRow");
+  if (!row) return;
+  row.innerHTML = "";
+  LINK_COLORS.forEach((c, i) => {
+    const dot = document.createElement("button");
+    dot.type = "button";
+    dot.className = "link-color-dot" + (i === selected ? " selected" : "");
+    dot.style.background = c;
+    dot.addEventListener("click", () => {
+      row.querySelectorAll(".link-color-dot").forEach((d) => d.classList.remove("selected"));
+      dot.classList.add("selected");
+      row.dataset.selected = String(i);
+    });
+    row.appendChild(dot);
+  });
+  row.dataset.selected = String(selected);
+}
+
+function saveLinkModal() {
+  const nameInput = document.getElementById("linkNameInput");
+  const urlInput = document.getElementById("linkUrlInput");
+  const emojiInput = document.getElementById("linkEmojiInput");
+  const colorRow = document.getElementById("linkColorRow");
+  if (!nameInput || !urlInput) return;
+
+  let url = (urlInput.value || "").trim();
+  const name = (nameInput.value || "").trim();
+  if (!url) return;
+  if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+
+  const color = parseInt(colorRow?.dataset?.selected || "0", 10) || 0;
+  const emoji = (emojiInput.value || "").trim();
+  const link = { name: name || url, url, emoji, color };
+
+  if (editingLinkIndex >= 0 && navLinks[editingLinkIndex]) {
+    navLinks[editingLinkIndex] = link;
+  } else {
+    navLinks.push(link);
+  }
+  saveNavLinks();
+  renderLinksGrid();
+  closeLinkModal();
+}
+
+function deleteLinkModal() {
+  if (editingLinkIndex >= 0 && navLinks[editingLinkIndex]) {
+    navLinks.splice(editingLinkIndex, 1);
+    saveNavLinks();
+    renderLinksGrid();
+  }
+  closeLinkModal();
+}
+
+// 绑定导航页事件
+(function initLinksView() {
+  const saveBtn = document.getElementById("linkSaveBtn");
+  const delBtn = document.getElementById("linkDeleteBtn");
+  const overlay = document.getElementById("linkModalOverlay");
+  saveBtn?.addEventListener("click", saveLinkModal);
+  delBtn?.addEventListener("click", deleteLinkModal);
+  overlay?.addEventListener("click", (e) => {
+    if (e.target === overlay) closeLinkModal();
+  });
+  loadNavLinks();
+  renderLinksGrid();
 })();
