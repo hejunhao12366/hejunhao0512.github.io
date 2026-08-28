@@ -736,31 +736,33 @@ class DrawingApp {
     const dragDY = (wp.y - sWP.y) * this.scale;
     if (Math.hypot(dragDX, dragDY) < 6) return;
 
-    // 新的边界框（世界坐标）
-    let minX = sBB.x, minY = sBB.y, maxX = sBB.x + sBB.w, maxY = sBB.y + sBB.h;
-    if (handle === 'se' || handle === 'ne') maxX = sBB.x + sBB.w + (wp.x - sWP.x);
-    if (handle === 'sw' || handle === 'nw') minX = sBB.x + (wp.x - sWP.x);
-    if (handle === 'se' || handle === 'sw') maxY = sBB.y + sBB.h + (wp.y - sWP.y);
-    if (handle === 'ne' || handle === 'nw') minY = sBB.y + (wp.y - sWP.y);
+    // 锚定角（对角固定不动）：se→左上 / ne→左下 / sw→右上 / nw→右下
+    const anchor = {
+      se: { x: sBB.x, y: sBB.y },
+      ne: { x: sBB.x, y: sBB.y + sBB.h },
+      sw: { x: sBB.x + sBB.w, y: sBB.y },
+      nw: { x: sBB.x + sBB.w, y: sBB.y + sBB.h },
+    }[handle];
 
-    // 防止反转（宽高为负）
-    if (maxX < minX) [minX, maxX] = [maxX, minX];
-    if (maxY < minY) [minY, maxY] = [maxY, minY];
+    // 比例式缩放：倍率 = 当前到锚点距离 ÷ 按下时到锚点距离
+    // 拖到 2 倍远 = 放大 2 倍，直观且对小元素同样精准
+    const d0 = Math.max(8, Math.hypot(sWP.x - anchor.x, sWP.y - anchor.y));
+    const d1 = Math.hypot(wp.x - anchor.x, wp.y - anchor.y);
+    let k = d1 / d0;
+    k = Math.max(0.05, Math.min(20, k));   // 单次拖动倍率钳制
 
-    // 尺寸钳制（24~4000 世界像素），锚定对角不动：
-    // se→锚左上 / ne→锚左下 / sw→锚右上 / nw→锚右下
     const MIN = 24, MAX = 4000;
-    let newW = Math.min(MAX, Math.max(MIN, maxX - minX));
-    let newH = Math.min(MAX, Math.max(MIN, maxY - minY));
-    if (handle === 'se') { maxX = minX + newW; maxY = minY + newH; }
-    else if (handle === 'ne') { maxX = minX + newW; minY = maxY - newH; }
-    else if (handle === 'sw') { minX = maxX - newW; maxY = minY + newH; }
-    else { minX = maxX - newW; minY = maxY - newH; } // nw
+    const newW = Math.min(MAX, Math.max(MIN, sBB.w * k));
+    const newH = Math.min(MAX, Math.max(MIN, sBB.h * k));
+    const sx = newW / Math.max(1, sBB.w);
+    const sy = newH / Math.max(1, sBB.h);
 
-    const oldW = Math.max(1, sBB.w);
-    const oldH = Math.max(1, sBB.h);
-    const sx = newW / oldW;
-    const sy = newH / oldH;
+    // 按锚点重算边界框
+    let minX, minY;
+    if (handle === 'se') { minX = anchor.x; minY = anchor.y; }
+    else if (handle === 'ne') { minX = anchor.x; minY = anchor.y - newH; }
+    else if (handle === 'sw') { minX = anchor.x - newW; minY = anchor.y; }
+    else { minX = anchor.x - newW; minY = anchor.y - newH; } // nw
 
     if (el.type === 'pen') {
       // 按比例缩放所有点
@@ -771,7 +773,7 @@ class DrawingApp {
     } else if (el.type === 'text') {
       // 文字缩放字号
       const oldFS = el.fontSize || 20;
-      el.fontSize = Math.max(10, Math.min(200, oldFS * sy));
+      el.fontSize = Math.max(10, Math.min(200, oldFS * k));
       el.x = minX;
       el.y = minY + (el.fontSize || 20);
     } else {
