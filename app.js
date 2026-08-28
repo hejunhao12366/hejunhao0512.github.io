@@ -26,6 +26,7 @@ const sampleState = {
     other: 0,
   },
   paydayDay: 12,
+  holidayEndDate: "",
   holidayDays: 30,
   holidayStartDate: "",
   sync: {
@@ -126,6 +127,7 @@ function normalizeState(nextState) {
       other: Number(nextState.balances?.other || 0),
     },
     paydayDay: clampPayday(nextState.paydayDay || nextState.daysUntilLivingFee || 1),
+    holidayEndDate: String(nextState.holidayEndDate || ""),
     holidayDays: Math.max(1, Math.round(Number(nextState.holidayDays) || 30)),
     holidayStartDate: String(nextState.holidayStartDate || ""),
     sync: {
@@ -436,6 +438,14 @@ function renderDaily() {
 
 function getDivisorDays() {
   if (state.mode === "holiday") {
+    // 优先用结束日期计算剩余天数（日历选日期）；旧数据无结束日期时退回天数倒推
+    if (state.holidayEndDate) {
+      const end = new Date(state.holidayEndDate + "T00:00:00");
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const remaining = Math.round((end - today) / 86400000);
+      return Math.max(0, remaining);
+    }
     if (!state.holidayStartDate) return state.holidayDays;
     const start = new Date(state.holidayStartDate + "T00:00:00");
     const today = new Date();
@@ -536,21 +546,30 @@ function textSpan(value) {
 
 function renderForms() {
   const set = (sel, val) => { const el = $(sel); if (el) el.value = val; };
-  set("#paydayDayInput", state.paydayDay);
-  set("#holidayDaysInput", state.holidayDays);
+  // 每月发生活费日：显示成当月日历日期（只取日部分）
+  if (state.paydayDay) {
+    const now = new Date();
+    const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    set("#paydayDayInput", `${ym}-${String(state.paydayDay).padStart(2, "0")}`);
+  }
+  set("#holidayEndDateInput", state.holidayEndDate);
   set("#syncTokenInput", state.sync.token);
   set("#syncGistInput", state.sync.gistId);
 }
 
 function syncDebtForm({ remember = true } = {}) {
   if (remember) rememberState();
-  const num = (sel) => Number($(sel)?.value || 0);
-  state.paydayDay = clampPayday($("#paydayDayInput")?.value);
-  const newHolidayDays = Math.max(1, Math.round(Number($("#holidayDaysInput")?.value || 30)));
-  if (newHolidayDays !== state.holidayDays) {
-    state.holidayStartDate = new Date().toISOString().slice(0, 10);
+  // 每月发生活费日：从日历日期取「日」（如 2026-08-12 → 12）
+  const pdValue = $("#paydayDayInput")?.value;
+  if (pdValue) {
+    const day = Number(pdValue.split("-")[2]);
+    if (!Number.isNaN(day)) state.paydayDay = clampPayday(day);
   }
-  state.holidayDays = newHolidayDays;
+  // 假期结束日期（日历选择）
+  const endValue = ($("#holidayEndDateInput")?.value || "").trim();
+  if (endValue) {
+    state.holidayEndDate = endValue;
+  }
 }
 
 function syncCloudForm({ remember = true } = {}) {
@@ -1010,6 +1029,12 @@ document.querySelectorAll(".mode-opt").forEach((button) => {
     state.mode = button.dataset.mode;
     if (state.mode === "holiday" && !state.holidayStartDate) {
       state.holidayStartDate = new Date().toISOString().slice(0, 10);
+    }
+    if (state.mode === "holiday" && !state.holidayEndDate) {
+      // 默认假期结束日期 = 今天 + holidayDays 天（旧数据兼容）
+      const d = new Date();
+      d.setDate(d.getDate() + state.holidayDays);
+      state.holidayEndDate = d.toISOString().slice(0, 10);
     }
     saveState();
     renderAll();
