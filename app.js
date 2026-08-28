@@ -1392,24 +1392,19 @@ $("#redoButton").addEventListener("click", () => {
 renderAll();
 setInterval(renderClock, 30_000);
 
-// 版本号显示（设置页）：从 SW cacheName 读取当前运行版本，帮助排查旧缓存
+// 版本号显示（设置页）：读 HTML 引用的 asset 版本，帮助排查旧缓存
 (function showVersion() {
   const tag = document.getElementById("appVersionTag");
   if (!tag) return;
+  // HTML 引用的 script 带 ?v=N —— 缓存的 HTML 会带缓存时代的版本号，诊断最可靠
   let v = "未知";
-  if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
-    const scriptURL = navigator.serviceWorker.controller.scriptURL || "";
-    const m = scriptURL.match(/v(\d+)/);
+  const scripts = Array.from(document.querySelectorAll("script[src*='?v=']"));
+  if (scripts.length) {
+    const m = scripts[0].src.match(/[?&]v=(\d+)/);
     if (m) v = "v" + m[1];
-  } else if (location.protocol === "http:" && location.hostname !== "localhost") {
-    // 无 SW 控制时退回 HTML 引用版本
-    const scripts = Array.from(document.querySelectorAll("script[src*='?v=']"));
-    const m = scripts.length && scripts[0].src.match(/v=(\d+)/);
-    if (m) v = "v" + m[1];
-  } else if (location.hostname === "localhost") {
-    const scripts = Array.from(document.querySelectorAll("script[src*='?v=']"));
-    const m = scripts.length && scripts[0].src.match(/v=(\d+)/);
-    if (m) v = "v" + m[1] + " (本地)";
   }
+  const host = location.hostname;
+  const isLocal = host === "localhost" || host === "127.0.0.1" || /^192\.168\./.test(host);
+  if (isLocal) v += " (本地)";
   tag.textContent = "当前版本：" + v + " · 若与最新不符，请清除浏览器网站数据后重开";
 })();
