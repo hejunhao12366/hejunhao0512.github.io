@@ -300,6 +300,16 @@ class DrawingApp {
     }
   }
 
+  // rAF 节流渲染：拖动/绘制期间每帧最多重绘一次，避免事件堆积卡顿
+  _scheduleRender() {
+    if (this._rafPending) return;
+    this._rafPending = true;
+    requestAnimationFrame(() => {
+      this._rafPending = false;
+      this.render();
+    });
+  }
+
   onPointerMove(e) {
     const sp = this.getPos(e);
 
@@ -307,7 +317,7 @@ class DrawingApp {
     if (this.isResizing && this.selectedId !== null) {
       const wp = this.screenToWorld(sp.x, sp.y);
       this._resizeElement(wp);
-      this.render();
+      this._scheduleRender();
       return;
     }
 
@@ -316,7 +326,7 @@ class DrawingApp {
       this.offsetX += sp.x - this.lastPointer.x;
       this.offsetY += sp.y - this.lastPointer.y;
       this.lastPointer = sp;
-      this.render();
+      this._scheduleRender();
       return;
     }
 
@@ -326,7 +336,7 @@ class DrawingApp {
       const el = this.getElementById(this.selectedId);
       if (el) {
         this._moveElement(el, wp.x - this.dragOffset.x, wp.y - this.dragOffset.y);
-        this.render();
+        this._scheduleRender();
       }
       return;
     }
@@ -339,11 +349,11 @@ class DrawingApp {
       const last = this.currentPath.points[this.currentPath.points.length - 1];
       const dist = Math.hypot(wp.x - last.x, wp.y - last.y);
       if (dist > 2) this.currentPath.points.push({ x: wp.x, y: wp.y });
-      this.render();
+      this._scheduleRender();
     } else if (this.previewEl) {
       this.previewEl.width = wp.x - this.startPos.x;
       this.previewEl.height = wp.y - this.startPos.y;
-      this.render();
+      this._scheduleRender();
     }
   }
 
@@ -619,10 +629,8 @@ class DrawingApp {
     if (el.type === 'pen') {
       const pts = el.points;
       if (!pts || pts.length < 2) return;
-      // 用 roughjs 的 linearPath / polygon
-      for (let i = 1; i < pts.length; i++) {
-        this.rc.line(pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y, opts);
-      }
+      // 性能关键：整条路径一次绘制（逐段 rc.line 在快速拖动时每帧几十次粗糙生成 → 卡顿跳变）
+      this.rc.linearPath(pts.map((p) => [p.x, p.y]), opts);
       return;
     }
 
