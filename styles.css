@@ -242,10 +242,10 @@
   touch-action: none;
 }
 
-/* 浮动操作栏（选中元素时） */
+/* 浮动操作栏（选中元素时）— 抬到底部导航栏上方，避免遮挡 */
 .floating-action-bar {
   position: absolute;
-  bottom: 16px;
+  bottom: calc(max(96px, calc(env(safe-area-inset-bottom) + 88px)) + 8px);
   left: 50%;
   transform: translateX(-50%) translateY(80px);
   display: flex;
