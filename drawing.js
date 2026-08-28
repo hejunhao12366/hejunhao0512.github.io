@@ -731,6 +731,11 @@ class DrawingApp {
     const sWP = this.resizeStartWP;
     const handle = this.resizeHandle;
 
+    // 死区：手指落在手柄上的天然抖动（<6px 屏幕距离）不触发缩放
+    const dragDX = (wp.x - sWP.x) * this.scale;
+    const dragDY = (wp.y - sWP.y) * this.scale;
+    if (Math.hypot(dragDX, dragDY) < 6) return;
+
     // 新的边界框（世界坐标）
     let minX = sBB.x, minY = sBB.y, maxX = sBB.x + sBB.w, maxY = sBB.y + sBB.h;
     if (handle === 'se' || handle === 'ne') maxX = sBB.x + sBB.w + (wp.x - sWP.x);
@@ -742,8 +747,16 @@ class DrawingApp {
     if (maxX < minX) [minX, maxX] = [maxX, minX];
     if (maxY < minY) [minY, maxY] = [maxY, minY];
 
-    const newW = Math.max(5, maxX - minX);
-    const newH = Math.max(5, maxY - minY);
+    // 尺寸钳制（24~4000 世界像素），锚定对角不动：
+    // se→锚左上 / ne→锚左下 / sw→锚右上 / nw→锚右下
+    const MIN = 24, MAX = 4000;
+    let newW = Math.min(MAX, Math.max(MIN, maxX - minX));
+    let newH = Math.min(MAX, Math.max(MIN, maxY - minY));
+    if (handle === 'se') { maxX = minX + newW; maxY = minY + newH; }
+    else if (handle === 'ne') { maxX = minX + newW; minY = maxY - newH; }
+    else if (handle === 'sw') { minX = maxX - newW; maxY = minY + newH; }
+    else { minX = maxX - newW; minY = maxY - newH; } // nw
+
     const oldW = Math.max(1, sBB.w);
     const oldH = Math.max(1, sBB.h);
     const sx = newW / oldW;
@@ -758,7 +771,7 @@ class DrawingApp {
     } else if (el.type === 'text') {
       // 文字缩放字号
       const oldFS = el.fontSize || 20;
-      el.fontSize = Math.max(8, oldFS * sy);
+      el.fontSize = Math.max(10, Math.min(200, oldFS * sy));
       el.x = minX;
       el.y = minY + (el.fontSize || 20);
     } else {
