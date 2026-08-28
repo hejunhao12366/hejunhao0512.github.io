@@ -222,11 +222,11 @@ function renderMonth() {
 
   renderEditableText("#livingFeeText", state.livingFee, "livingFee");
   renderEditableText("#livingFeeSplitText", state.livingFee, "livingFee");
-  $("#normalRepayText").textContent = money(normalRepay);
-  $("#normalLeftText").textContent = money(state.livingFee - normalRepay);
-  $("#splitRepayText").textContent = money(splitRepay);
-  $("#splitLeftText").textContent = money(state.livingFee - splitRepay);
-  $("#installmentNote").textContent = state.installmentNote || `分期：${money(state.installmentAmount)} / ${state.installmentMonths} = ${money(installmentPerMonth)}，突发情况时用`;
+  $("#normalRepayText").textContent = fmtMoney(normalRepay);
+  $("#normalLeftText").textContent = fmtMoney(state.livingFee - normalRepay);
+  $("#splitRepayText").textContent = fmtMoney(splitRepay);
+  $("#splitLeftText").textContent = fmtMoney(state.livingFee - splitRepay);
+  $("#installmentNote").textContent = state.installmentNote || `分期：${fmtMoney(state.installmentAmount)} / ${state.installmentMonths} = ${fmtMoney(installmentPerMonth)}，突发情况时用`;
 
   renderCustomSplits();
 }
@@ -405,10 +405,10 @@ function renderDaily() {
   const dailyAmount = totalBalance / divisor;
 
   renderBalanceCards(balanceItems);
-  $("#totalBalanceText").textContent = money(totalBalance);
+  $("#totalBalanceText").textContent = fmtMoney(totalBalance);
   $("#daysText").textContent = days;
-  $("#dailyFormulaText").textContent = `${money(totalBalance)} / ${divisor}`;
-  $("#dailyCanUseText").textContent = money(dailyAmount);
+  $("#dailyFormulaText").textContent = `${fmtMoney(totalBalance)} / ${divisor}`;
+  $("#dailyCanUseText").textContent = fmtMoney(dailyAmount);
 
   const highlight = document.querySelector(".daily-highlight");
   const isHoliday = state.mode === "holiday";
@@ -472,7 +472,7 @@ function renderBalanceCards(items) {
     card.className = "balance-card";
     card.innerHTML = `
       <span class="balance-card-label">${item.label}</span>
-      <span class="tag ${item.color} editable-value" data-path="${item.path}">${money(item.value)}</span>
+      <span class="tag ${item.color} editable-value" data-path="${item.path}">${fmtMoney(item.value)}</span>
     `;
     container.append(card);
   });
@@ -507,7 +507,7 @@ function renderFormula(selector, label, items) {
     if (index > 0) expression.append(textSpan("+"));
     const value = document.createElement("span");
     value.className = `tag ${item.color}${item.path ? " editable-value" : ""}`;
-    value.textContent = money(item.value);
+    value.textContent = fmtMoney(item.value);
     if (item.path) value.dataset.path = item.path;
     expression.append(value);
   });
@@ -515,14 +515,14 @@ function renderFormula(selector, label, items) {
   expression.append(textSpan("="));
   const total = document.createElement("span");
   total.className = "tag purple";
-  total.textContent = money(items.reduce((sum, item) => sum + Number(item.value || 0), 0));
+  total.textContent = fmtMoney(items.reduce((sum, item) => sum + Number(item.value || 0), 0));
   expression.append(total);
   formula.append(expression);
 }
 
 function renderEditableText(selector, value, path, integer = false) {
   const element = $(selector);
-  element.textContent = integer ? Math.round(Number(value || 0)) : money(value);
+  element.textContent = integer ? Math.round(Number(value || 0)) : fmtMoney(value);
   element.classList.add("editable-value");
   element.dataset.path = path;
   element.dataset.integer = integer ? "true" : "false";
@@ -1327,6 +1327,41 @@ $("#redoButton").addEventListener("click", () => {
 
 renderAll();
 setInterval(renderClock, 30_000);
+
+
+// ── 隐私模式：隐藏总余额/总欠等金额 ──
+let privacyMode = false;
+try { privacyMode = localStorage.getItem("mobile-ledger-privacy-v1") === "1"; } catch (e) {}
+
+function fmtMoney(v) {
+  return privacyMode ? "••••" : money(v);
+}
+
+function updatePrivacyEyes() {
+  const balIcon = document.getElementById("eyeBalanceIcon");
+  const debtIcon = document.getElementById("eyeDebtIcon");
+  const icon = privacyMode
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  [balIcon, debtIcon].forEach((el) => {
+    if (el) el.innerHTML = icon;
+  });
+}
+
+function togglePrivacy() {
+  privacyMode = !privacyMode;
+  try { localStorage.setItem("mobile-ledger-privacy-v1", privacyMode ? "1" : "0"); } catch (e) {}
+  updatePrivacyEyes();
+  renderAll();
+}
+
+(function bindPrivacyEyes() {
+  const balBtn = document.getElementById("eyeBalanceBtn");
+  const debtBtn = document.getElementById("eyeDebtBtn");
+  balBtn?.addEventListener("click", togglePrivacy);
+  debtBtn?.addEventListener("click", togglePrivacy);
+  updatePrivacyEyes();
+})();
 
 // 版本号显示（设置页）：读 HTML 引用的 asset 版本，帮助排查旧缓存
 (function showVersion() {

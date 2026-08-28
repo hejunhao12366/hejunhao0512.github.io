@@ -1821,3 +1821,37 @@ body[data-mode="holiday"] .school-only { display: none; }
   color: var(--muted);
   margin-top: 4px;
 }
+
+/* 隐私模式：眼睛按钮 */
+.privacy-eye {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted-2);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 6px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.privacy-eye:active {
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(0.92);
+}
+.total-strip {
+  display: flex;
+  align-items: center;
+}
+.debt-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.debt-title-row h1 {
+  margin: 0;
+}

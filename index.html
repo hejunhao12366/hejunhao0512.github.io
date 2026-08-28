@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=69" />
+    <link rel="stylesheet" href="./styles.css?v=70" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
@@ -68,13 +68,21 @@
             <div class="total-strip">
               <span>总余额</span>
               <span class="tag purple" id="totalBalanceText"></span>
+              <button class="privacy-eye" id="eyeBalanceBtn" type="button" aria-label="隐藏/显示余额" title="隐藏金额">
+                <svg id="eyeBalanceIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
             </div>
           <button id="saveDailyRecordButton" class="primary wide record-save-button" type="button">保存今日记录</button>
         </section>
 
         <section class="summary-section app-card hero-card" aria-labelledby="debtTitle">
           <div class="section-kicker">欠款总览</div>
-          <h1 id="debtTitle">总欠</h1>
+          <div class="debt-title-row">
+            <h1 id="debtTitle">总欠</h1>
+            <button class="privacy-eye" id="eyeDebtBtn" type="button" aria-label="隐藏/显示欠款" title="隐藏金额">
+              <svg id="eyeDebtIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
           <div class="formula-line" id="debtFormula"></div>
           <div class="repay-progress">
             <div class="repay-progress-label">
@@ -256,8 +264,8 @@
       </nav>
     </main>
 
-    <script src="./app.js?v=69"></script>
-    <script src="./drawing.js?v=69"></script>
+    <script src="./app.js?v=70"></script>
+    <script src="./drawing.js?v=70"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first
