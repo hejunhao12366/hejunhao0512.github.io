@@ -1046,14 +1046,12 @@ $("#clearRecordsButton").addEventListener("click", () => {
 
 document.querySelectorAll(".nav-item").forEach((button) => {
   button.addEventListener("click", () => {
-    switchView(button.dataset.view);
-    // 切换到绘图视图时初始化并重新计算画布尺寸
+    // 绘图功能已替换为 Excalidraw 网站：点击直接跳转，不再使用本地绘图模块
     if (button.dataset.view === "drawingView") {
-      setTimeout(() => {
-        initDrawing();
-        if (typeof drawingApp !== "undefined" && drawingApp) drawingApp.resize();
-      }, 120);
+      window.open("https://excalidraw.com/", "_blank", "noopener");
+      return;
     }
+    switchView(button.dataset.view);
   });
 });
 
@@ -1081,6 +1079,11 @@ document.querySelectorAll(".mode-opt").forEach((button) => {
 });
 
 function switchView(viewId) {
+  // 绘图已替换为 Excalidraw：任何入口进入 drawingView 都跳转外部网站
+  if (viewId === "drawingView") {
+    window.open("https://excalidraw.com/", "_blank", "noopener");
+    return;
+  }
   const current = document.querySelector(".app-view.active");
   const next = document.getElementById(viewId);
   if (next === current || !next) return;
