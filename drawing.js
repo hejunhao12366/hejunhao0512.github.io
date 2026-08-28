@@ -37,6 +37,7 @@ class DrawingApp {
     this.isDrawing = false;
     this.isDragging = false;
     this.isPanning = false;
+    this.activePointerId = null;
     this.lastPointer = { x: 0, y: 0 };
     this.startPos = { x: 0, y: 0 };
     this.dragOffset = { x: 0, y: 0 };
@@ -116,6 +117,12 @@ class DrawingApp {
         e.preventDefault();
         this._pinchActive = true;
         this._lastPinchDist = null; // 每次双指落下都重置基准
+        // 中断所有单指交互：第二指误触时绝不让 corner/元素跳到第二指位置
+        this.activePointerId = null;
+        this.isResizing = false;
+        this.resizeHandle = null;
+        this.isDragging = false;
+        this.isPanning = false;
         // 中断正在进行的单指绘制
         if (this.isDrawing) {
           this.isDrawing = false;
@@ -224,6 +231,8 @@ class DrawingApp {
   onPointerDown(e) {
     // 双指缩放进行中，忽略单指
     if (e.pointerType === 'touch' && this._pinchActive) return;
+    // 主指身份：后续 move/up 只认这根手指（第二指误触绝不劫持拖拽/缩放）
+    this.activePointerId = e.pointerId;
 
     this.canvas.setPointerCapture(e.pointerId);
     const sp = this.getPos(e);
@@ -311,6 +320,8 @@ class DrawingApp {
   }
 
   onPointerMove(e) {
+    // 只响应主指；pinch 激活时单指 move 不参与任何变换
+    if (e.pointerId !== this.activePointerId || this._pinchActive) return;
     const sp = this.getPos(e);
 
     // 缩放元素
@@ -358,10 +369,14 @@ class DrawingApp {
   }
 
   onPointerUp(e) {
+    // 只认主指；第二指抬起不结束主指操作
+    if (e.pointerId !== this.activePointerId) return;
+    this.activePointerId = null;
     if (this.isResizing) {
       this.isResizing = false;
       this.resizeHandle = null;
       this.save();
+      this.render();
       return;
     }
     if (this.isPanning) { this.isPanning = false; return; }
@@ -635,7 +650,14 @@ class DrawingApp {
     }
 
     if (el.type === 'rectangle') {
-      this.rc.rectangle(el.x, el.y, el.width, el.height, opts);
+      // 负宽高（镜像翻转）时归一化绘制
+      this.rc.rectangle(
+        Math.min(el.x, el.x + el.width),
+        Math.min(el.y, el.y + el.height),
+        Math.abs(el.width),
+        Math.abs(el.height),
+        opts
+      );
       return;
     }
 
@@ -765,10 +787,13 @@ class DrawingApp {
     const cornerX = wp.x - (sWP.x - handleStart.x);
     const cornerY = wp.y - (sWP.y - handleStart.y);
 
-    // 新宽高（对角锚定 + 钳制 24~4000）
+    // 镜像翻转（PPT 风格）：拖过对角锚点时平滑翻转到另一侧，
+    // 而不是 Math.abs 塌缩到最小 → 快速拖动不再"突然变得很小"
     const MIN = 24, MAX = 4000;
-    const newW = Math.min(MAX, Math.max(MIN, Math.abs(cornerX - anchor.x)));
-    const newH = Math.min(MAX, Math.max(MIN, Math.abs(cornerY - anchor.y)));
+    const sgn = (v) => (v >= 0 ? 1 : -1);
+    const clampSigned = (v) => sgn(v || 1) * Math.min(MAX, Math.max(MIN, Math.abs(v)));
+    const newW = clampSigned(cornerX - anchor.x);
+    const newH = clampSigned(cornerY - anchor.y);
 
     // 按锚点重算边界框
     let minX, minY;
@@ -781,17 +806,21 @@ class DrawingApp {
     const sy = newH / Math.max(1, sBB.h);
 
     if (el.type === 'pen') {
-      // 按比例缩放所有点
+      // 按比例缩放所有点（sx/sy 可为负 → 自动镜像）
       el.points = el.points.map(p => ({
         x: minX + (p.x - sBB.x) * sx,
         y: minY + (p.y - sBB.y) * sy,
       }));
     } else if (el.type === 'text') {
-      // 文字缩放字号
+      // 文字不镜像：按按下时 bbox 锚定对角，字号按 |sy| 缩放
       const oldFS = el.fontSize || 20;
-      el.fontSize = Math.max(10, Math.min(200, oldFS * sy));
-      el.x = minX;
-      el.y = minY + (el.fontSize || 20);
+      const fs = Math.max(10, Math.min(200, oldFS * Math.abs(sy)));
+      el.fontSize = fs;
+      const w = (el.text || '').length * fs * 0.6;
+      if (handle === 'se') { el.x = sBB.x; el.y = sBB.y + fs; }
+      else if (handle === 'ne') { el.x = sBB.x; el.y = sBB.y + sBB.h; }
+      else if (handle === 'sw') { el.x = sBB.x + sBB.w - w; el.y = sBB.y + fs; }
+      else { el.x = sBB.x + sBB.w - w; el.y = sBB.y + sBB.h; }
     } else {
       el.x = minX;
       el.y = minY;
