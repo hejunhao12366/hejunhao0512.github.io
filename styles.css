@@ -1862,8 +1862,11 @@ body[data-mode="holiday"] .school-only { display: none; }
 
 /* 中间凸出圆形按钮 */
 .nav-item-fab {
-  flex: 0 0 auto;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 2px;
   min-height: 0;
   padding: 0;
@@ -1880,12 +1883,13 @@ body[data-mode="holiday"] .school-only { display: none; }
   display: block;
   margin-top: -26px; /* 凸出导航栏 */
   transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+  flex-shrink: 0;
 }
 .nav-item-fab svg {
   position: absolute;
-  top: -22px;
+  top: calc(-26px + 27px);
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   color: #04231f;
   width: 22px;
   height: 22px;
