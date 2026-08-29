@@ -1607,3 +1607,140 @@ function deleteLinkModal() {
   loadNavLinks();
   renderLinksGrid();
 })();
+
+// ── 任务工作台（阶段 + 任务清单，中间凸出圆钮入口）──
+const TASKS_STORAGE_KEY = "mobile-ledger-tasks-v1";
+
+// 默认任务数据：参考装修工作台结构，用户可自行勾选/编辑
+const DEFAULT_TASKS = {
+  currentStage: 0,
+  stages: [
+    {
+      title: "前期准备",
+      desc: "确定目标与范围，做好基础准备，避免盲目开工。",
+      time: "1-2 周",
+      cost: "低",
+      items: [
+        { text: "明确目标与范围", tip: "写下来，越具体越好", done: false },
+        { text: "制定初步计划", tip: "拆解成可执行的小任务", done: false },
+        { text: "预算估算", tip: "留 20% 余量应对突发", done: false },
+        { text: "收集参考资料", tip: "截图/收藏有用的案例", done: false },
+      ],
+    },
+    {
+      title: "执行推进",
+      desc: "按计划推进，每天完成一点点。",
+      time: "2-4 周",
+      cost: "中",
+      items: [
+        { text: "完成任务 1", tip: "", done: false },
+        { text: "完成任务 2", tip: "", done: false },
+        { text: "阶段性检查", tip: "对照计划核对进度", done: false },
+      ],
+    },
+    {
+      title: "收尾验收",
+      desc: "检查结果，总结经验。",
+      time: "1 周",
+      cost: "低",
+      items: [
+        { text: "全面检查", tip: "", done: false },
+        { text: "总结复盘", tip: "记下做得好/待改进", done: false },
+      ],
+    },
+  ],
+};
+
+let taskBoard = null;
+
+function loadTaskBoard() {
+  try {
+    const raw = localStorage.getItem(TASKS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    taskBoard = parsed && Array.isArray(parsed.stages) ? parsed : JSON.parse(JSON.stringify(DEFAULT_TASKS));
+  } catch (e) {
+    taskBoard = JSON.parse(JSON.stringify(DEFAULT_TASKS));
+  }
+}
+
+function saveTaskBoard() {
+  try { localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(taskBoard)); } catch (e) {}
+}
+
+function renderTasksView() {
+  const stageList = document.getElementById("tasksStageList");
+  if (!stageList || !taskBoard) return;
+
+  // 阶段列表（左侧）
+  stageList.innerHTML = "";
+  taskBoard.stages.forEach((stage, i) => {
+    const total = stage.items.length;
+    const done = stage.items.filter((t) => t.done).length;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "tasks-stage-item" + (i === taskBoard.currentStage ? " current" : "") + (pct === 100 ? " complete" : "");
+    row.innerHTML = `
+      <span class="tasks-stage-num">${i + 1}</span>
+      <span class="tasks-stage-name">${escapeHtml(stage.title)}</span>
+      <span class="tasks-stage-pct">${pct}%</span>
+    `;
+    row.addEventListener("click", () => {
+      taskBoard.currentStage = i;
+      saveTaskBoard();
+      renderTasksView();
+    });
+    stageList.appendChild(row);
+  });
+
+  // 当前阶段详情
+  const stage = taskBoard.stages[taskBoard.currentStage];
+  if (!stage) return;
+  const total = stage.items.length;
+  const done = stage.items.filter((t) => t.done).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+
+  document.getElementById("tasksStageKicker").textContent = `阶段 ${taskBoard.currentStage + 1}`;
+  document.getElementById("tasksStageTitle").textContent = stage.title;
+  document.getElementById("tasksStageDesc").textContent = stage.desc || "";
+  document.getElementById("tasksStageTime").textContent = `⏱ ${stage.time || "—"}`;
+  document.getElementById("tasksStageCost").textContent = `💰 ${stage.cost || "—"}`;
+  const statusEl = document.getElementById("tasksStageStatus");
+  statusEl.textContent = pct === 100 ? "✓ 已完成" : done > 0 ? "进行中" : "未开始";
+  statusEl.className = "tasks-status" + (pct === 100 ? " done" : done > 0 ? " ongoing" : "");
+
+  // 任务清单
+  const checklist = document.getElementById("tasksChecklist");
+  checklist.innerHTML = "";
+  stage.items.forEach((item, idx) => {
+    const row = document.createElement("label");
+    row.className = "tasks-check-item" + (item.done ? " done" : "");
+    row.innerHTML = `
+      <input type="checkbox" ${item.done ? "checked" : ""} />
+      <div class="tasks-check-body">
+        <span class="tasks-check-text">${escapeHtml(item.text)}</span>
+        ${item.tip ? `<span class="tasks-check-tip">${escapeHtml(item.tip)}</span>` : ""}
+      </div>
+    `;
+    row.querySelector("input").addEventListener("change", (e) => {
+      item.done = e.target.checked;
+      saveTaskBoard();
+      renderTasksView();
+    });
+    checklist.appendChild(row);
+  });
+
+  // 总进度
+  const allTotal = taskBoard.stages.reduce((s, st) => s + st.items.length, 0);
+  const allDone = taskBoard.stages.reduce((s, st) => s + st.items.filter((t) => t.done).length, 0);
+  const allPct = allTotal ? Math.round((allDone / allTotal) * 100) : 0;
+  document.getElementById("tasksStageLabel").textContent = `阶段 ${taskBoard.currentStage + 1} / ${taskBoard.stages.length}`;
+  document.getElementById("tasksPercentText").textContent = allPct + "%";
+  document.getElementById("tasksProgressFill").style.width = allPct + "%";
+}
+
+(function initTasksView() {
+  loadTaskBoard();
+  renderTasksView();
+})();
