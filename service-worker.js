@@ -1,10 +1,10 @@
-const cacheName = "mobile-ledger-v75";
+const cacheName = "mobile-ledger-v76";
 const assets = [
   "./",
   "./index.html",
-  "./styles.css?v=75",
-  "./app.js?v=75",
-  "./drawing.js?v=75",
+  "./styles.css?v=76",
+  "./app.js?v=76",
+  "./drawing.js?v=76",
   "./manifest.webmanifest",
   "./icon.svg",
 ];
