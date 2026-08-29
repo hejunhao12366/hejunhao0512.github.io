@@ -1045,6 +1045,7 @@ function switchView(viewId) {
   const current = document.querySelector(".app-view.active");
   const next = document.getElementById(viewId);
   if (next === current || !next) return;
+  document.body.dataset.view = viewId; // 控制 topbar 模式切换只在计算页显示
 
   next.classList.add("active");
   current?.classList.remove("active");
@@ -1353,6 +1354,7 @@ $("#redoButton").addEventListener("click", () => {
 // 隐私模式全局标志（var 提升，避免 fmtMoney 在 let 声明前被调用触发 TDZ）
 var privacyMode = false;
 
+document.body.dataset.view = document.querySelector('.app-view.active')?.id || 'calculatorView';
 renderAll();
 setInterval(renderClock, 30_000);
 
@@ -1722,9 +1724,15 @@ function renderTasksView() {
         <span class="tasks-check-text">${escapeHtml(item.text)}</span>
         ${item.tip ? `<span class="tasks-check-tip">${escapeHtml(item.tip)}</span>` : ""}
       </div>
+      <button class="tasks-item-del" type="button" aria-label="删除任务">×</button>
     `;
     row.querySelector("input").addEventListener("change", (e) => {
       item.done = e.target.checked;
+      saveTaskBoard();
+      renderTasksView();
+    });
+    row.querySelector(".tasks-item-del").addEventListener("click", () => {
+      stage.items.splice(idx, 1);
       saveTaskBoard();
       renderTasksView();
     });
@@ -1740,7 +1748,53 @@ function renderTasksView() {
   document.getElementById("tasksProgressFill").style.width = allPct + "%";
 }
 
+function bindTaskManageButtons() {
+  const addBtn = document.getElementById("tasksAddBtn");
+  addBtn?.addEventListener("click", () => {
+    const t = window.prompt("任务名称：");
+    if (!t || !t.trim()) return;
+    const tip = window.prompt("提示（可留空）：") || "";
+    const stage = taskBoard.stages[taskBoard.currentStage];
+    if (!stage) return;
+    stage.items.push({ text: t.trim(), tip: tip.trim(), done: false });
+    saveTaskBoard();
+    renderTasksView();
+  });
+
+  document.getElementById("tasksAddStageBtn")?.addEventListener("click", () => {
+    const name = window.prompt("新阶段名称：");
+    if (!name || !name.trim()) return;
+    taskBoard.stages.push({ title: name.trim(), desc: "", time: "—", cost: "—", items: [] });
+    taskBoard.currentStage = taskBoard.stages.length - 1;
+    saveTaskBoard();
+    renderTasksView();
+  });
+
+  document.getElementById("tasksRenameStageBtn")?.addEventListener("click", () => {
+    const stage = taskBoard.stages[taskBoard.currentStage];
+    if (!stage) return;
+    const name = window.prompt("修改阶段名称：", stage.title);
+    if (!name || !name.trim()) return;
+    stage.title = name.trim();
+    saveTaskBoard();
+    renderTasksView();
+  });
+
+  document.getElementById("tasksDeleteStageBtn")?.addEventListener("click", () => {
+    if (taskBoard.stages.length <= 1) {
+      window.alert("至少保留一个阶段");
+      return;
+    }
+    if (!window.confirm(`删除阶段「${taskBoard.stages[taskBoard.currentStage].title}」及其所有任务？`)) return;
+    taskBoard.stages.splice(taskBoard.currentStage, 1);
+    taskBoard.currentStage = Math.min(taskBoard.currentStage, taskBoard.stages.length - 1);
+    saveTaskBoard();
+    renderTasksView();
+  });
+}
+
 (function initTasksView() {
   loadTaskBoard();
   renderTasksView();
+  bindTaskManageButtons();
 })();

@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=74" />
+    <link rel="stylesheet" href="./styles.css?v=75" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
@@ -226,6 +226,12 @@
                 <span class="tasks-meta-item" id="tasksStageCost">💰 —</span>
               </div>
               <div class="tasks-checklist" id="tasksChecklist"></div>
+              <button class="tasks-add-btn" id="tasksAddBtn" type="button">＋ 添加任务</button>
+              <div class="tasks-stage-manage">
+                <button class="tasks-manage-btn" id="tasksAddStageBtn" type="button">＋ 新阶段</button>
+                <button class="tasks-manage-btn" id="tasksRenameStageBtn" type="button">✎ 改阶段名</button>
+                <button class="tasks-manage-btn danger" id="tasksDeleteStageBtn" type="button">🗑 删此阶段</button>
+              </div>
             </div>
           </div>
         </section>
@@ -302,8 +308,8 @@
       </nav>
     </main>
 
-    <script src="./app.js?v=74"></script>
-    <script src="./drawing.js?v=74"></script>
+    <script src="./app.js?v=75"></script>
+    <script src="./drawing.js?v=75"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first

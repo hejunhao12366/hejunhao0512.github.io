@@ -2054,3 +2054,70 @@ body[data-mode="holiday"] .school-only { display: none; }
   color: var(--muted-2);
 }
 .tasks-check-tip { font-size: 12px; color: var(--muted-2); line-height: 1.5; }
+
+/* 在校/假期切换：仅在计算页显示（body[data-view] 由 switchView 维护） */
+body:not([data-view="calculatorView"]) .mode-switch { display: none; }
+body:not([data-view="calculatorView"]) .topbar > div:first-child .time-text { margin-top: 6px; }
+
+/* 任务添加/管理按钮 */
+.tasks-add-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px;
+  border-radius: var(--r-sm);
+  border: 1.5px dashed rgba(94, 234, 212, 0.35);
+  background: rgba(94, 234, 212, 0.06);
+  color: var(--mint);
+  font-size: 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s var(--ease);
+}
+.tasks-add-btn:active { background: rgba(94, 234, 212, 0.15); transform: scale(0.98); }
+
+.tasks-stage-manage {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.tasks-manage-btn {
+  flex: 1 1 auto;
+  min-width: 88px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.tasks-manage-btn:active { background: rgba(255, 255, 255, 0.1); }
+.tasks-manage-btn.danger { color: #f87171; border-color: rgba(248, 113, 113, 0.3); }
+
+/* 任务行删除按钮 */
+.tasks-item-del {
+  margin-left: auto;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted-2);
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  align-self: center;
+}
+.tasks-item-del:active { background: rgba(248, 113, 113, 0.25); color: #f87171; }
+
+/* 任务页底部留出导航空间（修内容被导航栏遮挡）*/
+#tasksView .tasks-card { margin-bottom: 0; }
+#tasksView { padding-bottom: 8px; }
