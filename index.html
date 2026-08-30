@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=78" />
+    <link rel="stylesheet" href="./styles.css?v=79" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
@@ -280,7 +280,7 @@
             <div class="form-group">
               <label class="school-only">
                 每月发生活费日
-                <input id="paydayDayInput" type="date" />
+                <input id="paydayDayInput" type="number" min="1" max="31" step="1" inputmode="numeric" />
               </label>
               <label class="holiday-only">
                 假期结束日期
@@ -308,8 +308,8 @@
       </nav>
     </main>
 
-    <script src="./app.js?v=78"></script>
-    <script src="./drawing.js?v=78"></script>
+    <script src="./app.js?v=79"></script>
+    <script src="./drawing.js?v=79"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first

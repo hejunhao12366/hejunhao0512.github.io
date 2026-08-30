@@ -546,12 +546,8 @@ function textSpan(value) {
 
 function renderForms() {
   const set = (sel, val) => { const el = $(sel); if (el) el.value = val; };
-  // 每月发生活费日：显示成当月日历日期（只取日部分）
-  if (state.paydayDay) {
-    const now = new Date();
-    const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    set("#paydayDayInput", `${ym}-${String(state.paydayDay).padStart(2, "0")}`);
-  }
+  // 每月发生活费日：直接填数字（几号）
+  set("#paydayDayInput", state.paydayDay);
   set("#holidayEndDateInput", state.holidayEndDate);
   set("#syncTokenInput", state.sync.token);
   set("#syncGistInput", state.sync.gistId);
@@ -559,12 +555,9 @@ function renderForms() {
 
 function syncDebtForm({ remember = true } = {}) {
   if (remember) rememberState();
-  // 每月发生活费日：从日历日期取「日」（如 2026-08-12 → 12）
-  const pdValue = $("#paydayDayInput")?.value;
-  if (pdValue) {
-    const day = Number(pdValue.split("-")[2]);
-    if (!Number.isNaN(day)) state.paydayDay = clampPayday(day);
-  }
+  // 每月发生活费日：直接读数字（几号）
+  const pdValue = Number($("#paydayDayInput")?.value);
+  if (!Number.isNaN(pdValue) && pdValue > 0) state.paydayDay = clampPayday(pdValue);
   // 假期结束日期（日历选择）
   const endValue = ($("#holidayEndDateInput")?.value || "").trim();
   if (endValue) {
@@ -1050,8 +1043,11 @@ function switchView(viewId) {
   next.classList.add("active");
   current?.classList.remove("active");
 
-  document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
-  document.querySelector(`[data-view="${viewId}"]`).classList.add("active");
+  // nav 高亮：全部清除后重新标记（防御性遍历，确保目标 tab 一定带上 active）
+  const navBtns = document.querySelectorAll(".nav-item");
+  navBtns.forEach((item) => { item.classList.remove("active"); });
+  const target = Array.from(navBtns).find((b) => b.dataset.view === viewId);
+  if (target) target.classList.add("active");
 }
 
 autoSaveFromForm("#debtForm", syncDebtForm);
