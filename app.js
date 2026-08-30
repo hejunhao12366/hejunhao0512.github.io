@@ -1352,15 +1352,17 @@ $("#redoButton").addEventListener("click", () => {
 });
 
 // 隐私模式全局标志（var 提升，避免 fmtMoney 在 let 声明前被调用触发 TDZ）
-var privacyMode = false;
+// 隐私模式全局标志：必须在 renderAll 前初始化（否则首次渲染金额先闪现）
+// 默认隐藏（隐私优先）；用户明确选过显示(存"0")才显示
+var privacyMode = true;
+try { privacyMode = localStorage.getItem("mobile-ledger-privacy-v1") !== "0"; } catch (e) {}
 
 document.body.dataset.view = document.querySelector('.app-view.active')?.id || 'calculatorView';
 renderAll();
 setInterval(renderClock, 30_000);
 
 
-// ── 隐私模式：隐藏总余额/总欠等金额（var 声明在文件顶部，避免 TDZ）──
-try { privacyMode = localStorage.getItem("mobile-ledger-privacy-v1") === "1"; } catch (e) {}
+// ── 隐私模式：隐藏总余额/总欠等金额（初始值已在 renderAll 前读取，此处不再重复）──
 
 function fmtMoney(v) {
   return privacyMode ? "••••" : money(v);

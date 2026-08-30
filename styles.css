@@ -1677,6 +1677,13 @@ label {
   color: #051210;
   font-weight: 700;
 }
+/* 中间圆钮激活态：光圈强调（不铺满胶囊底） */
+.nav-item.nav-item-fab.active {
+  background: transparent;
+}
+.nav-item.nav-item-fab.active::before {
+  box-shadow: 0 6px 18px rgba(20, 184, 166, 0.65), 0 0 0 3px rgba(94, 234, 212, 0.35), 0 2px 6px rgba(0, 0, 0, 0.35);
+}
 
 /* ============================================================
    Mode visibility
@@ -2122,14 +2129,17 @@ body:not([data-view="calculatorView"]) .topbar > div:first-child .time-text { ma
 }
 .tasks-item-del:active { background: rgba(248, 113, 113, 0.25); color: #f87171; }
 
-/* 任务页：头部固定 + 内容区独立滚动（导航栏永不遮挡内容）*/
+/* 任务页：头部固定 + 内容区独立滚动（导航栏永不遮挡内容）
+   注意：display 由 .app-view / .app-view.active 控制（ID 会覆盖类导致页面泄漏），此处只写布局属性 */
 #tasksView {
-  display: flex;
   flex-direction: column;
   height: calc(100dvh - 172px);
   height: calc(100vh - 172px);
   min-height: 380px;
   padding-bottom: 0;
+}
+.app-view#tasksView.active {
+  display: flex;
 }
 #tasksView .tasks-hero { flex-shrink: 0; margin-bottom: 4px; }
 #tasksView .tasks-card {
