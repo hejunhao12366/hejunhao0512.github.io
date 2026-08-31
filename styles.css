@@ -1894,6 +1894,7 @@ body[data-mode="holiday"] .school-only { display: none; }
   flex-shrink: 0;
 }
 .nav-fab-circle svg {
+  display: block;   /* 保险：杜绝任何行内基线间隙（iOS 残留行为） */
   color: #04231f;
   pointer-events: none;
 }
@@ -2043,8 +2044,33 @@ body[data-mode="holiday"] .school-only { display: none; }
   width: 20px;
   height: 20px;
   margin-top: 1px;
-  accent-color: #14b8a6;
   flex-shrink: 0;
+  /* 重置全局 input 规则的 padding/min 尺寸：appearance:none 后 checkbox 变普通盒子
+     会吃 padding，且 flex 项 min-width/height:auto 不允许小于内容最小尺寸 → 被撑大 */
+  padding: 0;
+  min-width: 0;
+  min-height: 0;
+  /* iOS Safari 修复：原生 checkbox 在暗色主题渲染成黑色大圆角方块，
+     accent-color 在 iOS 不生效 → 必须 appearance:none 完全自绘 */
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 6px;
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: background-color 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.tasks-check-item input[type="checkbox"]:checked {
+  background-color: #14b8a6;
+  border-color: #14b8a6;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 13px 13px;
+}
+.tasks-check-item input[type="checkbox"]:focus-visible {
+  outline: 2px solid #14b8a6;
+  outline-offset: 2px;
 }
 .tasks-check-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .tasks-check-text { font-size: 14px; color: var(--text); line-height: 1.45; }
