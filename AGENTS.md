@@ -46,7 +46,7 @@
 
 - **PWA 缓存**：`v82`
 - **HTML asset 版本**：`?v=82`（styles.css / app.js / drawing.js）
-- **最新 commit**：待推送（任务列表复选框 iOS 渲染修复）
+- **最新 commit**：`c128cd3b` — 任务列表复选框 iOS Safari 渲染修复（v82）
 
 ## ⚠️ 修改规则（每次改动必须遵守）
 
@@ -123,7 +123,7 @@ pen（画笔）、rectangle、circle、line（直线）、arrow、text、select�
 
 | 日期 | Commit | 内容 |
 |------|--------|------|
-| 2026-08-31 | 待推送 | **任务列表复选框 iOS 渲染 bug 已修复**：`.tasks-check-item input[type="checkbox"]` 加 `appearance:none` 完全自绘（圆角边框/未勾选半透明底/勾选薄荷绿 `#14b8a6`+SVG 白对勾）。关键坑：全局 `input` 规则 padding 11px 14px + flex `min-width:auto` 会把自绘 checkbox 撑到 30×46 → 必须 `padding:0; min-width:0; min-height:0`。已验证（Playwright 393×852 视口计算样式+点击切换+截图）。SW v82 |
+| 2026-08-31 | `c128cd3b` | **任务列表复选框 iOS 渲染 bug 已修复**：`.tasks-check-item input[type="checkbox"]` 加 `appearance:none` 完全自绘（圆角边框/未勾选半透明底/勾选薄荷绿 `#14b8a6`+SVG 白对勾）。关键坑：全局 `input` 规则 padding 11px 14px + flex `min-width:auto` 会把自绘 checkbox 撑到 30×46 → 必须 `padding:0; min-width:0; min-height:0`。已验证（Playwright 393×852 视口计算样式+点击切换+截图）。SW v82 |
 | 2026-08-31 | 已确认 | 底部导航悬浮图标居中：代码层四边 16px 绝对居中；用户照片"偏移"为拍摄透视，非 bug |
 | 2026-08-27 | `c302e1d` | 绘图：工具栏改单行横向滚动(修复按键重叠) + 画布改白色面板(网格/选中框/默认笔色适配白底) |
 | 2026-08-10 | `1f72c44` | 假期模式：隐藏「还款后生活费」模块（school-only），总欠/还款计划保留 |
