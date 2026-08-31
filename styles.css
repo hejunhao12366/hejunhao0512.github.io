@@ -1681,7 +1681,7 @@ label {
 .nav-item.nav-item-fab.active {
   background: transparent;
 }
-.nav-item.nav-item-fab.active::before {
+.nav-item.nav-item-fab.active .nav-fab-circle {
   box-shadow: 0 6px 18px rgba(20, 184, 166, 0.65), 0 0 0 3px rgba(94, 234, 212, 0.35), 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
@@ -1867,43 +1867,37 @@ body[data-mode="holiday"] .school-only { display: none; }
    任务工作台 + 中间凸出圆钮
    ════════════════════════════════════════════ */
 
-/* 中间凸出圆形按钮 */
+/* 中间凸出圆形按钮：真实圆容器 + flex 居中（数学上保证图标同心）*/
 .nav-item-fab {
   flex: 1 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start; /* 覆盖 .nav-item 的 center：否则删文字后圆钮被下推、图标偏上 */
-  gap: 2px;
+  justify-content: flex-start;
   min-height: 0;
   padding: 0;
   background: transparent;
   position: relative;
 }
-.nav-item-fab::before {
-  content: "";
+.nav-fab-circle {
   width: 54px;
   height: 54px;
   border-radius: 50%;
   background: linear-gradient(145deg, #6ee7d0, #14b8a6);
   box-shadow: 0 6px 18px rgba(20, 184, 166, 0.45), 0 2px 6px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  display: block;
-  margin-top: -26px; /* 凸出导航栏 */
+  display: flex;           /* 图标在圆内 flex 居中 —— 绝对同心 */
+  align-items: center;
+  justify-content: center;
+  margin-top: -26px;       /* 凸出导航栏 */
   transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
   flex-shrink: 0;
 }
-.nav-item-fab svg {
-  position: absolute;
-  top: calc(-26px + 27px);
-  left: 50%;
-  transform: translate(-50%, -50%);
+.nav-fab-circle svg {
   color: #04231f;
-  width: 22px;
-  height: 22px;
   pointer-events: none;
-  }
-  .nav-item-fab:active::before {
+}
+.nav-item-fab:active .nav-fab-circle {
   transform: scale(0.92);
   box-shadow: 0 3px 10px rgba(20, 184, 166, 0.35);
 }
