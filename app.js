@@ -1609,43 +1609,49 @@ function deleteLinkModal() {
 })();
 
 // ── 任务工作台（阶段 + 任务清单，中间凸出圆钮入口）──
-const TASKS_STORAGE_KEY = "mobile-ledger-tasks-v1";
+const TASKS_STORAGE_KEY = "mobile-ledger-tasks-v2";
 
-// 默认任务数据：参考装修工作台结构，用户可自行勾选/编辑
+// 默认数据：1 个计划，含 3 个阶段（旧版单计划数据自动迁移）
 const DEFAULT_TASKS = {
-  currentStage: 0,
-  stages: [
+  currentPlan: 0,
+  plans: [
     {
-      title: "前期准备",
-      desc: "确定目标与范围，做好基础准备，避免盲目开工。",
-      time: "1-2 周",
-      cost: "低",
-      items: [
-        { text: "明确目标与范围", tip: "写下来，越具体越好", done: false },
-        { text: "制定初步计划", tip: "拆解成可执行的小任务", done: false },
-        { text: "预算估算", tip: "留 20% 余量应对突发", done: false },
-        { text: "收集参考资料", tip: "截图/收藏有用的案例", done: false },
-      ],
-    },
-    {
-      title: "执行推进",
-      desc: "按计划推进，每天完成一点点。",
-      time: "2-4 周",
-      cost: "中",
-      items: [
-        { text: "完成任务 1", tip: "", done: false },
-        { text: "完成任务 2", tip: "", done: false },
-        { text: "阶段性检查", tip: "对照计划核对进度", done: false },
-      ],
-    },
-    {
-      title: "收尾验收",
-      desc: "检查结果，总结经验。",
-      time: "1 周",
-      cost: "低",
-      items: [
-        { text: "全面检查", tip: "", done: false },
-        { text: "总结复盘", tip: "记下做得好/待改进", done: false },
+      name: "计划 1",
+      currentStage: 0,
+      stages: [
+        {
+          title: "前期准备",
+          desc: "确定目标与范围，做好基础准备，避免盲目开工。",
+          time: "1-2 周",
+          cost: "低",
+          items: [
+            { text: "明确目标与范围", tip: "写下来，越具体越好", done: false },
+            { text: "制定初步计划", tip: "拆解成可执行的小任务", done: false },
+            { text: "预算估算", tip: "留 20% 余量应对突发", done: false },
+            { text: "收集参考资料", tip: "截图/收藏有用的案例", done: false },
+          ],
+        },
+        {
+          title: "执行推进",
+          desc: "按计划推进，每天完成一点点。",
+          time: "2-4 周",
+          cost: "中",
+          items: [
+            { text: "完成任务 1", tip: "", done: false },
+            { text: "完成任务 2", tip: "", done: false },
+            { text: "阶段性检查", tip: "对照计划核对进度", done: false },
+          ],
+        },
+        {
+          title: "收尾验收",
+          desc: "检查结果，总结经验。",
+          time: "1 周",
+          cost: "低",
+          items: [
+            { text: "全面检查", tip: "", done: false },
+            { text: "总结复盘", tip: "记下做得好/待改进", done: false },
+          ],
+        },
       ],
     },
   ],
@@ -1657,7 +1663,21 @@ function loadTaskBoard() {
   try {
     const raw = localStorage.getItem(TASKS_STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
-    taskBoard = parsed && Array.isArray(parsed.stages) ? parsed : JSON.parse(JSON.stringify(DEFAULT_TASKS));
+    if (parsed && Array.isArray(parsed.plans)) {
+      taskBoard = parsed;
+    } else if (parsed && Array.isArray(parsed.stages)) {
+      // 旧版 v1 数据迁移：包一层计划
+      taskBoard = {
+        currentPlan: 0,
+        plans: [{
+          name: "计划 1",
+          currentStage: parsed.currentStage || 0,
+          stages: parsed.stages,
+        }],
+      };
+    } else {
+      taskBoard = JSON.parse(JSON.stringify(DEFAULT_TASKS));
+    }
   } catch (e) {
     taskBoard = JSON.parse(JSON.stringify(DEFAULT_TASKS));
   }
@@ -1667,41 +1687,98 @@ function saveTaskBoard() {
   try { localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(taskBoard)); } catch (e) {}
 }
 
-function renderTasksView() {
-  const stageList = document.getElementById("tasksStageList");
-  if (!stageList || !taskBoard) return;
+function getPlan() {
+  if (!taskBoard.plans || !taskBoard.plans.length) {
+    taskBoard.plans = [JSON.parse(JSON.stringify(DEFAULT_TASKS.plans[0]))];
+    taskBoard.currentPlan = 0;
+  }
+  return taskBoard.plans[taskBoard.currentPlan] || taskBoard.plans[0];
+}
 
-  // 阶段列表（左侧）
+// ── 计划列表渲染 ──
+function renderPlanList() {
+  const list = document.getElementById("tasksPlanList");
+  if (!list || !taskBoard) return;
+  list.innerHTML = "";
+  taskBoard.plans.forEach((plan, i) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "tasks-plan-chip" + (i === taskBoard.currentPlan ? " current" : "");
+    chip.textContent = plan.name || ("计划 " + (i + 1));
+    chip.addEventListener("click", () => {
+      taskBoard.currentPlan = i;
+      saveTaskBoard();
+      renderTasksView();
+    });
+    list.appendChild(chip);
+  });
+  // ＋ 新计划
+  const addChip = document.createElement("button");
+  addChip.type = "button";
+  addChip.className = "tasks-plan-chip add";
+  addChip.textContent = "＋ 新计划";
+  addChip.addEventListener("click", () => {
+    const name = window.prompt("新计划名称：");
+    if (!name || !name.trim()) return;
+    taskBoard.plans.push({
+      name: name.trim(),
+      currentStage: 0,
+      stages: [{
+        title: "阶段 1",
+        desc: "",
+        time: "—",
+        cost: "—",
+        items: [],
+      }],
+    });
+    taskBoard.currentPlan = taskBoard.plans.length - 1;
+    saveTaskBoard();
+    renderTasksView();
+  });
+  list.appendChild(addChip);
+}
+
+// ── 阶段列表渲染 ──
+function renderStageList() {
+  const stageList = document.getElementById("tasksStageList");
+  const plan = getPlan();
+  if (!stageList || !plan) return;
   stageList.innerHTML = "";
-  taskBoard.stages.forEach((stage, i) => {
+  plan.stages.forEach((stage, i) => {
     const total = stage.items.length;
     const done = stage.items.filter((t) => t.done).length;
     const pct = total ? Math.round((done / total) * 100) : 0;
 
     const row = document.createElement("button");
     row.type = "button";
-    row.className = "tasks-stage-item" + (i === taskBoard.currentStage ? " current" : "") + (pct === 100 ? " complete" : "");
+    row.className = "tasks-stage-item" + (i === plan.currentStage ? " current" : "") + (pct === 100 ? " complete" : "");
     row.innerHTML = `
       <span class="tasks-stage-num">${i + 1}</span>
       <span class="tasks-stage-name">${escapeHtml(stage.title)}</span>
       <span class="tasks-stage-pct">${pct}%</span>
     `;
     row.addEventListener("click", () => {
-      taskBoard.currentStage = i;
+      plan.currentStage = i;
       saveTaskBoard();
       renderTasksView();
     });
     stageList.appendChild(row);
   });
+}
 
-  // 当前阶段详情
-  const stage = taskBoard.stages[taskBoard.currentStage];
+// ── 主渲染 ──
+function renderTasksView() {
+  renderPlanList();
+  renderStageList();
+
+  const plan = getPlan();
+  const stage = plan.stages[plan.currentStage];
   if (!stage) return;
   const total = stage.items.length;
   const done = stage.items.filter((t) => t.done).length;
   const pct = total ? Math.round((done / total) * 100) : 0;
 
-  document.getElementById("tasksStageKicker").textContent = `阶段 ${taskBoard.currentStage + 1}`;
+  document.getElementById("tasksStageKicker").textContent = `阶段 ${plan.currentStage + 1}`;
   document.getElementById("tasksStageTitle").textContent = stage.title;
   document.getElementById("tasksStageDesc").textContent = stage.desc || "";
   document.getElementById("tasksStageTime").textContent = `⏱ ${stage.time || "—"}`;
@@ -1710,7 +1787,6 @@ function renderTasksView() {
   statusEl.textContent = pct === 100 ? "✓ 已完成" : done > 0 ? "进行中" : "未开始";
   statusEl.className = "tasks-status" + (pct === 100 ? " done" : done > 0 ? " ongoing" : "");
 
-  // 任务清单
   const checklist = document.getElementById("tasksChecklist");
   checklist.innerHTML = "";
   stage.items.forEach((item, idx) => {
@@ -1737,11 +1813,11 @@ function renderTasksView() {
     checklist.appendChild(row);
   });
 
-  // 总进度
-  const allTotal = taskBoard.stages.reduce((s, st) => s + st.items.length, 0);
-  const allDone = taskBoard.stages.reduce((s, st) => s + st.items.filter((t) => t.done).length, 0);
+  // 总进度（当前计划所有阶段）
+  const allTotal = plan.stages.reduce((s, st) => s + st.items.length, 0);
+  const allDone = plan.stages.reduce((s, st) => s + st.items.filter((t) => t.done).length, 0);
   const allPct = allTotal ? Math.round((allDone / allTotal) * 100) : 0;
-  document.getElementById("tasksStageLabel").textContent = `阶段 ${taskBoard.currentStage + 1} / ${taskBoard.stages.length}`;
+  document.getElementById("tasksStageLabel").textContent = `阶段 ${plan.currentStage + 1} / ${plan.stages.length}`;
   document.getElementById("tasksPercentText").textContent = allPct + "%";
   document.getElementById("tasksProgressFill").style.width = allPct + "%";
 }
@@ -1752,7 +1828,7 @@ function bindTaskManageButtons() {
     const t = window.prompt("任务名称：");
     if (!t || !t.trim()) return;
     const tip = window.prompt("提示（可留空）：") || "";
-    const stage = taskBoard.stages[taskBoard.currentStage];
+    const stage = getPlan().stages[getPlan().currentStage];
     if (!stage) return;
     stage.items.push({ text: t.trim(), tip: tip.trim(), done: false });
     saveTaskBoard();
@@ -1762,14 +1838,15 @@ function bindTaskManageButtons() {
   document.getElementById("tasksAddStageBtn")?.addEventListener("click", () => {
     const name = window.prompt("新阶段名称：");
     if (!name || !name.trim()) return;
-    taskBoard.stages.push({ title: name.trim(), desc: "", time: "—", cost: "—", items: [] });
-    taskBoard.currentStage = taskBoard.stages.length - 1;
+    getPlan().stages.push({ title: name.trim(), desc: "", time: "—", cost: "—", items: [] });
+    getPlan().currentStage = getPlan().stages.length - 1;
     saveTaskBoard();
     renderTasksView();
   });
 
   document.getElementById("tasksRenameStageBtn")?.addEventListener("click", () => {
-    const stage = taskBoard.stages[taskBoard.currentStage];
+    const plan = getPlan();
+    const stage = plan.stages[plan.currentStage];
     if (!stage) return;
     const name = window.prompt("修改阶段名称：", stage.title);
     if (!name || !name.trim()) return;
@@ -1779,13 +1856,27 @@ function bindTaskManageButtons() {
   });
 
   document.getElementById("tasksDeleteStageBtn")?.addEventListener("click", () => {
-    if (taskBoard.stages.length <= 1) {
+    const plan = getPlan();
+    if (plan.stages.length <= 1) {
       window.alert("至少保留一个阶段");
       return;
     }
-    if (!window.confirm(`删除阶段「${taskBoard.stages[taskBoard.currentStage].title}」及其所有任务？`)) return;
-    taskBoard.stages.splice(taskBoard.currentStage, 1);
-    taskBoard.currentStage = Math.min(taskBoard.currentStage, taskBoard.stages.length - 1);
+    if (!window.confirm(`删除阶段「${plan.stages[plan.currentStage].title}」及其所有任务？`)) return;
+    plan.stages.splice(plan.currentStage, 1);
+    plan.currentStage = Math.min(plan.currentStage, plan.stages.length - 1);
+    saveTaskBoard();
+    renderTasksView();
+  });
+
+  document.getElementById("tasksDeletePlanBtn")?.addEventListener("click", () => {
+    if (taskBoard.plans.length <= 1) {
+      window.alert("至少保留一个计划");
+      return;
+    }
+    const plan = getPlan();
+    if (!window.confirm(`删除计划「${plan.name}」及其全部阶段？`)) return;
+    taskBoard.plans.splice(taskBoard.currentPlan, 1);
+    taskBoard.currentPlan = Math.min(taskBoard.currentPlan, taskBoard.plans.length - 1);
     saveTaskBoard();
     renderTasksView();
   });
@@ -1796,3 +1887,4 @@ function bindTaskManageButtons() {
   renderTasksView();
   bindTaskManageButtons();
 })();
+

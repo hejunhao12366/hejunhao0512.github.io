@@ -1901,15 +1901,8 @@ body[data-mode="holiday"] .school-only { display: none; }
   width: 22px;
   height: 22px;
   pointer-events: none;
-}
-.nav-fab-label {
-  font-size: 11px;
-  color: var(--muted);
-  line-height: 1;
-  margin-top: 2px;
-}
-.nav-item-fab.active .nav-fab-label { color: var(--mint); }
-.nav-item-fab:active::before {
+  }
+  .nav-item-fab:active::before {
   transform: scale(0.92);
   box-shadow: 0 3px 10px rgba(20, 184, 166, 0.35);
 }
@@ -2157,3 +2150,43 @@ body:not([data-view="calculatorView"]) .topbar > div:first-child .time-text { ma
 }
 #tasksView .tasks-stage-list { flex-shrink: 0; }
 #tasksView .tasks-detail { padding-bottom: 18px; }
+
+/* 计划列表（横滑 chips） */
+.tasks-plan-list {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-top: 10px;
+  padding-bottom: 2px;
+  flex-shrink: 0;
+}
+.tasks-plan-list::-webkit-scrollbar { display: none; }
+.tasks-plan-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 14px;
+  border-radius: var(--r-full);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s var(--ease);
+}
+.tasks-plan-chip.current {
+  background: linear-gradient(145deg, #6ee7d0, #14b8a6);
+  color: #04231f;
+  border-color: transparent;
+}
+.tasks-plan-chip.add {
+  border-style: dashed;
+  color: var(--mint);
+  background: rgba(94, 234, 212, 0.06);
+}
+.tasks-plan-chip:active { transform: scale(0.94); }

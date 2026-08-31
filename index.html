@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=79" />
+    <link rel="stylesheet" href="./styles.css?v=80" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
@@ -200,6 +200,7 @@
         <section class="app-card tasks-hero">
           <div class="section-kicker">工作台</div>
           <h1>任务阶段</h1>
+          <div class="tasks-plan-list" id="tasksPlanList"></div>
           <div class="tasks-progress-wrap">
             <div class="tasks-progress-info">
               <span id="tasksStageLabel">阶段 1 / 1</span>
@@ -231,6 +232,7 @@
                 <button class="tasks-manage-btn" id="tasksAddStageBtn" type="button">＋ 新阶段</button>
                 <button class="tasks-manage-btn" id="tasksRenameStageBtn" type="button">✎ 改阶段名</button>
                 <button class="tasks-manage-btn danger" id="tasksDeleteStageBtn" type="button">🗑 删此阶段</button>
+                <button class="tasks-manage-btn danger" id="tasksDeletePlanBtn" type="button">🗑 删此计划</button>
               </div>
             </div>
           </div>
@@ -301,15 +303,14 @@
         <button class="nav-item" type="button" data-view="recordsView">记录</button>
         <button class="nav-item nav-item-fab" type="button" data-view="tasksView" aria-label="任务工作台" title="任务工作台">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="4"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
-          <span class="nav-fab-label">任务</span>
         </button>
         <button class="nav-item" type="button" data-view="linksView">导航</button>
         <button class="nav-item" type="button" data-view="settingsView">设置</button>
       </nav>
     </main>
 
-    <script src="./app.js?v=79"></script>
-    <script src="./drawing.js?v=79"></script>
+    <script src="./app.js?v=80"></script>
+    <script src="./drawing.js?v=80"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first
