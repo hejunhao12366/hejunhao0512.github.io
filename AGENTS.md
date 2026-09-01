@@ -62,6 +62,32 @@
 4. **推送后**：更新本文件的「当前版本」和「最近变更」
 5. **推送无需等用户确认**（用户明确要求自动推送）
 
+## 🚨 版本推送 SOP（新会话必读，按此执行勿再摸索）
+
+**双对话并行警告**：GLM/DeepSeek 两个会话同时维护本仓库，远程可能领先本地 commit。
+
+1. **改代码前**：先查远程版本，以远程为准：
+   ```bash
+   curl -s "https://api.github.com/repos/hejunhao12366/hejunhao0512.github.io/contents/service-worker.js?ref=main" | python -c "import json,sys,base64;print(base64.b64decode(json.load(sys.stdin)['content']).decode())" | grep cacheName
+   ```
+   若远程版本 > 本地：先拉远程文件对齐（`curl ... contents/<文件>?ref=main` 逐个对比覆盖本地），再开始改。
+2. **bump 版本必须是独立命令，禁止与验证 && 串联**：
+   ```bash
+   # ✅ 正确：分开执行，各自确认输出
+   sed -i 's/mobile-ledger-v82/mobile-ledger-v83/; s/?v=82/?v=83/g' service-worker.js index.html
+   grep -o "mobile-ledger-v[0-9]*" service-worker.js   # 确认 bump 成功
+   # ❌ 错误：node verify.js && sed ... —— 验证退出码非 0 会断链，sed 静默不执行
+   ```
+   （历史事故：v71 时 sed 被 && 断链，版本没 bump → URL 不变 → 手机缓存永不失效，用户反复看到旧版，排查了三轮）
+3. **只改文件内容不改 ?v=N = 白改**：浏览器和 SW 都按 URL 缓存，URL 不变永远命中旧文件。任何 JS/CSS 改动必须 bump。
+4. **推送后必须线上确认**（GitHub Pages CDN 有延迟，sleep 15-20s 再查）：
+   ```bash
+   curl -s "https://hejunhao12366.github.io/hejunhao0512.github.io/service-worker.js" | grep -o "mobile-ledger-v[0-9]*"
+   ```
+   显示新版本号才算推送完成。
+5. **更新 AGENTS.md「当前版本」+ 变更日志**，并推送（AGENTS.md 写入需用户批准弹窗，批准后正常推）。
+6. **告知用户刷新方式**：设置页底部「当前版本」是诊断入口；旧缓存需 iOS Safari 清除历史记录与网站数据；SW 更新需完全关闭 App 重开（首开下载、二开激活）。
+
 ## iOS Safari 已知坑（务必避免）
 
 | 坑 | 原因 | 解决方案 |
