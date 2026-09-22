@@ -2211,3 +2211,55 @@ body:not([data-view="calculatorView"]) .topbar > div:first-child .time-text { ma
   background: rgba(94, 234, 212, 0.06);
 }
 .tasks-plan-chip:active { transform: scale(0.94); }
+
+/* 微信帮助面板 */
+.wechat-helper-steps {
+  margin: 10px 0 14px;
+  padding-left: 20px;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.9;
+}
+.wechat-helper .link-modal-actions { flex-wrap: wrap; }
+.wechat-helper .link-modal-actions .primary { flex: 1 1 auto; min-width: 96px; }
+
+/* 微信专属链接角标 + 开关 */
+.link-icon-wechat::after {
+  content: "微";
+  position: absolute;
+  right: -4px;
+  top: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #07c160;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+.link-icon { position: relative; }
+.link-wechat-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 0;
+  min-width: 0;
+  min-height: 0;
+}
+.link-wechat-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #07c160;
+  flex-shrink: 0;
+  padding: 0;
+  min-width: 0;
+  min-height: 0;
+}

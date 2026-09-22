@@ -1412,6 +1412,8 @@ const LINKS_STORAGE_KEY = "mobile-ledger-links-v1";
 
 // 默认网址（首次使用）：绘图(Excalidraw) + 常用网站
 const DEFAULT_LINKS = [
+  { name: "校园卡充值", url: "https://hub.17wanxiao.com/bsacs/light.action?flag=weixingroup_zjkkjxycz&paytype=weixin&ecardFunc=index", emoji: "💳", color: 11, wechat: true },
+  { name: "智能水电", url: "https://xqh5.17wanxiao.com/", emoji: "⚡", color: 6, wechat: true },
   { name: "绘图", url: "https://excalidraw.com/", emoji: "🎨", color: 0 },
   { name: "哔哩哔哩", url: "https://www.bilibili.com/", emoji: "📺", color: 1 },
   { name: "抖音", url: "https://www.douyin.com/", emoji: "📱", color: 2 },
@@ -1463,6 +1465,8 @@ function renderLinksGrid() {
     const glyph = (link.emoji && link.emoji.trim()) || (link.name || "?").slice(0, 1);
     icon.textContent = glyph;
 
+    if (link.wechat) icon.classList.add("link-icon-wechat");
+
     const label = document.createElement("span");
     label.className = "link-label";
     label.textContent = link.name || "未命名";
@@ -1470,9 +1474,13 @@ function renderLinksGrid() {
     item.appendChild(icon);
     item.appendChild(label);
 
-    // 点击 → 跳转
+    // 点击 → 跳转；微信专属站点弹出「复制链接 + 打开微信」面板（其 OAuth 需在微信内打开）
     item.addEventListener("click", () => {
       if (!link.url) return;
+      if (link.wechat) {
+        openWechatHelper(link);
+        return;
+      }
       window.open(link.url, "_blank", "noopener");
     });
 
@@ -1523,12 +1531,16 @@ function openLinkModal(index) {
     nameInput.value = navLinks[index].name || "";
     urlInput.value = navLinks[index].url || "";
     emojiInput.value = navLinks[index].emoji || "";
+    const wechatToggle = document.getElementById("linkWechatToggle");
+    if (wechatToggle) wechatToggle.checked = Boolean(navLinks[index].wechat);
     delBtn.classList.remove("hidden");
   } else {
     title.textContent = "添加网址";
     nameInput.value = "";
     urlInput.value = "";
     emojiInput.value = "";
+    const wechatToggleReset = document.getElementById("linkWechatToggle");
+    if (wechatToggleReset) wechatToggleReset.checked = false;
     delBtn.classList.add("hidden");
   }
   renderLinkColorRow(index >= 0 ? navLinks[index].color : 0);
@@ -1573,7 +1585,8 @@ function saveLinkModal() {
 
   const color = parseInt(colorRow?.dataset?.selected || "0", 10) || 0;
   const emoji = (emojiInput.value || "").trim();
-  const link = { name: name || url, url, emoji, color };
+  const wechatToggleSave = document.getElementById("linkWechatToggle");
+  const link = { name: name || url, url, emoji, color, wechat: Boolean(wechatToggleSave?.checked) };
 
   if (editingLinkIndex >= 0 && navLinks[editingLinkIndex]) {
     navLinks[editingLinkIndex] = link;
@@ -1595,6 +1608,60 @@ function deleteLinkModal() {
 }
 
 // 绑定导航页事件
+// ── 微信专属链接帮助面板（校园卡充值/智能水电等依赖微信 OAuth 的站点）──
+function openWechatHelper(link) {
+  const overlay = document.getElementById("wechatHelperOverlay");
+  if (!overlay) return;
+  document.getElementById("wechatHelperTitle").textContent = `「${link.name}」需要在微信中打开`;
+
+  const copyBtn = document.getElementById("wechatCopyBtn");
+  const openBtn = document.getElementById("wechatOpenBtn");
+  const tip = document.getElementById("wechatCopyTip");
+
+  // 换新按钮（避免重复绑定）：克隆替换
+  const newCopy = copyBtn.cloneNode(true);
+  const newOpen = openBtn.cloneNode(true);
+  copyBtn.replaceWith(newCopy);
+  openBtn.replaceWith(newOpen);
+
+  newCopy.addEventListener("click", async () => {
+    const url = link.url;
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(url);
+      ok = true;
+    } catch (e) {
+      // iOS Safari 兼容：临时 textarea 方案
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = url;
+        ta.style.cssText = "position:fixed;opacity:0;";
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand("copy");
+        ta.remove();
+      } catch (e2) { ok = false; }
+    }
+    if (tip) tip.textContent = ok ? "✓ 链接已复制，去微信粘贴即可" : "复制失败，请长按上方步骤里的链接手动复制：" + url;
+  });
+
+  newOpen.addEventListener("click", () => {
+    // weixin:// scheme 拉起微信 App（iOS/Android 均支持）
+    window.location.href = "weixin://";
+  });
+
+  overlay.classList.remove("hidden");
+}
+
+(function bindWechatHelper() {
+  const overlay = document.getElementById("wechatHelperOverlay");
+  const closeBtn = document.getElementById("wechatCloseBtn");
+  closeBtn?.addEventListener("click", () => overlay.classList.add("hidden"));
+  overlay?.addEventListener("click", (e) => {
+    if (e.target === overlay) overlay.classList.add("hidden");
+  });
+})();
+
 (function initLinksView() {
   const saveBtn = document.getElementById("linkSaveBtn");
   const delBtn = document.getElementById("linkDeleteBtn");

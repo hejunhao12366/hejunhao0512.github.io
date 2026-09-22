@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=82" />
+    <link rel="stylesheet" href="./styles.css?v=83" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
@@ -174,6 +174,26 @@
       </div>
 
       <!-- 网址导航：添加/编辑弹窗 -->
+      <!-- 微信专属链接帮助面板：复制链接 + 拉起微信 -->
+      <div id="wechatHelperOverlay" class="repay-plan-overlay hidden">
+        <div class="repay-plan-modal wechat-helper">
+          <h3 id="wechatHelperTitle">需要在微信中打开</h3>
+          <div class="plan-hint">该网站的登录授权只在微信内有效（离开微信公众号后浏览器直接打开会提示「用户不存在」）。</div>
+          <ol class="wechat-helper-steps">
+            <li>点下方「复制链接」</li>
+            <li>点「打开微信」切到微信</li>
+            <li>在微信任意聊天框粘贴链接并发送</li>
+            <li>点击刚发送的链接 → 自动重新授权，正常充值</li>
+          </ol>
+          <div class="link-modal-actions">
+            <button id="wechatCopyBtn" class="primary" type="button">复制链接</button>
+            <button id="wechatOpenBtn" class="primary" type="button">打开微信</button>
+            <button id="wechatCloseBtn" class="ghost-button" type="button">关闭</button>
+          </div>
+          <div class="plan-hint" id="wechatCopyTip" style="margin-top:8px;"></div>
+        </div>
+      </div>
+
       <div id="linkModalOverlay" class="repay-plan-overlay hidden">
         <div class="repay-plan-modal link-modal">
           <h3 id="linkModalTitle">添加网址</h3>
@@ -186,6 +206,10 @@
             <label class="link-label" for="linkEmojiInput">图标表情</label>
             <input id="linkEmojiInput" type="text" placeholder="例如：📺（可留空用首字）" maxlength="4" />
             <div class="link-color-row" id="linkColorRow"></div>
+            <label class="link-wechat-toggle">
+              <input type="checkbox" id="linkWechatToggle" />
+              <span>微信内打开（需公众号授权的网站，如校园卡充值）</span>
+            </label>
           </div>
           <div class="link-modal-actions">
             <button id="linkDeleteBtn" class="ghost-button danger hidden" type="button">删除</button>
@@ -311,8 +335,8 @@
       </nav>
     </main>
 
-    <script src="./app.js?v=82"></script>
-    <script src="./drawing.js?v=82"></script>
+    <script src="./app.js?v=83"></script>
+    <script src="./drawing.js?v=83"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first
