@@ -44,16 +44,16 @@
 
 ## 当前版本
 
-- **PWA 缓存**：`v85`
-- **HTML asset 版本**：`?v=85`（styles.css / app.js / drawing.js）
-- **最新 commit**：`c6f8a6e` — 支付宝充值通道（绕开微信 OAuth 墙）
+- **PWA 缓存**：`v86`
+- **HTML asset 版本**：`?v=86`（styles.css / app.js / drawing.js）
+- **最新 commit**：`58426de` — 撤销微信/支付宝跳转，恢复直接打开网站
 
 ## ⚠️ 修改规则（每次改动必须遵守）
 
-1. **改 CSS/JS 后**：递增 cache 版本（`v85`→`v86`），同步更新 3 处：
+1. **改 CSS/JS 后**：递增 cache 版本（`v86`→`v87`），同步更新 3 处：
    - `service-worker.js` 的 `cacheName`
-   - `service-worker.js` 的 assets 列表（`?v=86`）
-   - `index.html` 的 `<link>` / `<script>` 标签（`?v=86`）
+   - `service-worker.js` 的 assets 列表（`?v=87`）
+   - `index.html` 的 `<link>` / `<script>` 标签（`?v=87`）
 2. **验证**：用 Node 脚本做静态检查（语法 + 关键内容存在性），确保通过后再推送
 3. **推送**：`git push` 被墙（git insteadOf 镜像规则），用 **GitHub REST API** 推送：
    - 脚本模板：写 Python 脚本到 `D:\tmp\hermes-push.py`，用后即删
@@ -149,7 +149,8 @@ pen（画笔）、rectangle、circle、line（直线）、arrow、text、select�
 
 | 日期 | Commit | 内容 |
 |------|--------|------|
-| 2026-08-31 | `c6f8a6e` | **支付宝充值通道**（v85）：用户嫌微信流程麻烦 → 新增「💰 支付宝充值」默认链接（`alipay:true`）：点击复制「完美校园」搜索词 + `alipays://` 拉起支付宝 + toast 提示搜索。支付宝「完美校园」小程序是官方非微信渠道（可充值/缴电费），无授权墙。一次性迁移 `mobile-ledger-links-migrate-v85` 给老数据补入口。微信通道保留兜底 |
+| 2026-08-31 | `58426de` | **撤销微信/支付宝跳转（v86）**：用户决定不搞跳转 → 删除微信一键流、支付宝通道、帮助面板、copyText/showToast、wechat/alipay 标记、角标与开关样式，恢复「点击直接打开网站」。两个学校链接保留为普通链接。反向迁移 `mobile-ledger-links-migrate-v86` 清理手机上的「支付宝充值」残留 |
+| 2026-08-31 | `c6f8a6e` | ~~支付宝充值通道（v85）~~ 已撤销 |
 | 2026-08-31 | `3726651` | **微信链接一键流**（v84）：用户嫌 4 步面板麻烦 → 点击微信专属链接直接「自动复制 + 拉起微信 + 顶部 toast 提示」，用户只需在微信粘贴。复制失败才弹手动面板兜底。`copyText()`（clipboard+execCommand）/`showToast()`/`handleWechatLink()` |
 | 2026-08-31 | `8597948` | **导航页微信专属学校网站**（v83）：新增「校园卡充值 💳」「智能水电 ⚡」默认链接（带绿色「微」角标）。原理：17wanxiao 系网站依赖微信公众号 OAuth，一次性 code 离开微信即失效（「用户不存在」）。链接编辑弹窗加「微信内打开」开关 |
 | 2026-08-31 | `179c2a9` | **任务页「计划」层**（v80）：数据 v2 `{currentPlan, plans:[{name,currentStage,stages}]}`，旧数据自动迁移；计划横滑条 + ＋新计划 + 🗑删此计划；删除 FAB 下方「任务」文字 |
