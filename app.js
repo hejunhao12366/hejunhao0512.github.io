@@ -1474,11 +1474,11 @@ function renderLinksGrid() {
     item.appendChild(icon);
     item.appendChild(label);
 
-    // 点击 → 跳转；微信专属站点弹出「复制链接 + 打开微信」面板（其 OAuth 需在微信内打开）
+    // 点击 → 跳转；微信专属站点：一键复制链接 + 直接拉起微信（复制失败才弹手动面板兜底）
     item.addEventListener("click", () => {
       if (!link.url) return;
       if (link.wechat) {
-        openWechatHelper(link);
+        handleWechatLink(link);
         return;
       }
       window.open(link.url, "_blank", "noopener");
@@ -1608,6 +1608,51 @@ function deleteLinkModal() {
 }
 
 // 绑定导航页事件
+// ── 微信专属链接：一键复制 + 直接拉起微信 ──
+async function copyText(textToCopy) {
+  try {
+    await navigator.clipboard.writeText(textToCopy);
+    return true;
+  } catch (e) {
+    // iOS Safari 兼容：临时 textarea 方案
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = textToCopy;
+      ta.style.cssText = "position:fixed;opacity:0;";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      ta.remove();
+      return ok;
+    } catch (e2) { return false; }
+  }
+}
+
+function showToast(msg) {
+  let toast = document.getElementById("appToast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "appToast";
+    toast.className = "app-toast";
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.classList.add("show");
+  window.clearTimeout(showToast._timer);
+  showToast._timer = window.setTimeout(() => toast.classList.remove("show"), 2600);
+}
+
+// 一键流：复制成功 → 提示 + 直接跳微信；失败 → 弹手动面板兜底
+async function handleWechatLink(link) {
+  const ok = await copyText(link.url);
+  if (ok) {
+    showToast("✅ 链接已复制 · 正在打开微信…");
+    window.setTimeout(() => { window.location.href = "weixin://"; }, 400);
+  } else {
+    openWechatHelper(link);
+  }
+}
+
 // ── 微信专属链接帮助面板（校园卡充值/智能水电等依赖微信 OAuth 的站点）──
 function openWechatHelper(link) {
   const overlay = document.getElementById("wechatHelperOverlay");
