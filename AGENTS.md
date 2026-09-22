@@ -44,16 +44,16 @@
 
 ## 当前版本
 
-- **PWA 缓存**：`v83`
-- **HTML asset 版本**：`?v=83`（styles.css / app.js / drawing.js）
-- **最新 commit**：`8597948` — 导航页：微信专属学校网站（校园卡充值/智能水电）
+- **PWA 缓存**：`v84`
+- **HTML asset 版本**：`?v=84`（styles.css / app.js / drawing.js）
+- **最新 commit**：`3726651` — 微信链接一键流（自动复制+直跳微信）
 
 ## ⚠️ 修改规则（每次改动必须遵守）
 
-1. **改 CSS/JS 后**：递增 cache 版本（`v83`→`v84`），同步更新 3 处：
+1. **改 CSS/JS 后**：递增 cache 版本（`v84`→`v85`），同步更新 3 处：
    - `service-worker.js` 的 `cacheName`
-   - `service-worker.js` 的 assets 列表（`?v=84`）
-   - `index.html` 的 `<link>` / `<script>` 标签（`?v=84`）
+   - `service-worker.js` 的 assets 列表（`?v=85`）
+   - `index.html` 的 `<link>` / `<script>` 标签（`?v=85`）
 2. **验证**：用 Node 脚本做静态检查（语法 + 关键内容存在性），确保通过后再推送
 3. **推送**：`git push` 被墙（git insteadOf 镜像规则），用 **GitHub REST API** 推送：
    - 脚本模板：写 Python 脚本到 `D:\tmp\hermes-push.py`，用后即删
@@ -149,7 +149,8 @@ pen（画笔）、rectangle、circle、line（直线）、arrow、text、select�
 
 | 日期 | Commit | 内容 |
 |------|--------|------|
-| 2026-08-31 | `8597948` | **导航页微信专属学校网站**（v83）：新增「校园卡充值 💳」「智能水电 ⚡」默认链接（带绿色「微」角标）。点击弹帮助面板：复制链接（clipboard+execCommand 双方案）+ `weixin://` 拉起微信 + 四步指引。原理：17wanxiao 系网站依赖微信公众号 OAuth，一次性 code 离开微信即失效（「用户不存在」）。链接编辑弹窗加「微信内打开」开关 |
+| 2026-08-31 | `3726651` | **微信链接一键流**（v84）：用户嫌 4 步面板麻烦 → 点击微信专属链接直接「自动复制 + 拉起微信 + 顶部 toast 提示」，用户只需在微信粘贴。复制失败才弹手动面板兜底。`copyText()`（clipboard+execCommand）/`showToast()`/`handleWechatLink()` |
+| 2026-08-31 | `8597948` | **导航页微信专属学校网站**（v83）：新增「校园卡充值 💳」「智能水电 ⚡」默认链接（带绿色「微」角标）。原理：17wanxiao 系网站依赖微信公众号 OAuth，一次性 code 离开微信即失效（「用户不存在」）。链接编辑弹窗加「微信内打开」开关 |
 | 2026-08-31 | `179c2a9` | **任务页「计划」层**（v80）：数据 v2 `{currentPlan, plans:[{name,currentStage,stages}]}`，旧数据自动迁移；计划横滑条 + ＋新计划 + 🗑删此计划；删除 FAB 下方「任务」文字 |
 | 2026-08-31 | `f328236` | FAB 图标居中根治（v81）：`<span class="nav-fab-circle">` 真实圆容器 + svg 为 flex 子元素（align/justify center），CDP 实测 dx=0.00 dy=0.00 |
 | 2026-08-31 | `d45d3e9` | 导航高亮修复（v79）：switchView 改防御式遍历（`Array.from(navBtns).find(b => b.dataset.view === viewId)`）；「每月发生活费日」改回数字输入 |
