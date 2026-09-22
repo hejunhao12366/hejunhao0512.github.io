@@ -44,16 +44,16 @@
 
 ## 当前版本
 
-- **PWA 缓存**：`v82`
-- **HTML asset 版本**：`?v=82`（styles.css / app.js / drawing.js）
-- **最新 commit**：`c128cd3b` — 任务列表复选框 iOS Safari 渲染修复（v82）
+- **PWA 缓存**：`v83`
+- **HTML asset 版本**：`?v=83`（styles.css / app.js / drawing.js）
+- **最新 commit**：`8597948` — 导航页：微信专属学校网站（校园卡充值/智能水电）
 
 ## ⚠️ 修改规则（每次改动必须遵守）
 
-1. **改 CSS/JS 后**：递增 cache 版本（`v54`→`v55`），同步更新 3 处：
+1. **改 CSS/JS 后**：递增 cache 版本（`v83`→`v84`），同步更新 3 处：
    - `service-worker.js` 的 `cacheName`
-   - `service-worker.js` 的 assets 列表（`?v=55`）
-   - `index.html` 的 `<link>` / `<script>` 标签（`?v=55`）
+   - `service-worker.js` 的 assets 列表（`?v=84`）
+   - `index.html` 的 `<link>` / `<script>` 标签（`?v=84`）
 2. **验证**：用 Node 脚本做静态检查（语法 + 关键内容存在性），确保通过后再推送
 3. **推送**：`git push` 被墙（git insteadOf 镜像规则），用 **GitHub REST API** 推送：
    - 脚本模板：写 Python 脚本到 `D:\tmp\hermes-push.py`，用后即删
@@ -149,6 +149,10 @@ pen（画笔）、rectangle、circle、line（直线）、arrow、text、select�
 
 | 日期 | Commit | 内容 |
 |------|--------|------|
+| 2026-08-31 | `8597948` | **导航页微信专属学校网站**（v83）：新增「校园卡充值 💳」「智能水电 ⚡」默认链接（带绿色「微」角标）。点击弹帮助面板：复制链接（clipboard+execCommand 双方案）+ `weixin://` 拉起微信 + 四步指引。原理：17wanxiao 系网站依赖微信公众号 OAuth，一次性 code 离开微信即失效（「用户不存在」）。链接编辑弹窗加「微信内打开」开关 |
+| 2026-08-31 | `179c2a9` | **任务页「计划」层**（v80）：数据 v2 `{currentPlan, plans:[{name,currentStage,stages}]}`，旧数据自动迁移；计划横滑条 + ＋新计划 + 🗑删此计划；删除 FAB 下方「任务」文字 |
+| 2026-08-31 | `f328236` | FAB 图标居中根治（v81）：`<span class="nav-fab-circle">` 真实圆容器 + svg 为 flex 子元素（align/justify center），CDP 实测 dx=0.00 dy=0.00 |
+| 2026-08-31 | `d45d3e9` | 导航高亮修复（v79）：switchView 改防御式遍历（`Array.from(navBtns).find(b => b.dataset.view === viewId)`）；「每月发生活费日」改回数字输入 |
 | 2026-08-31 | `c128cd3b` | **任务列表复选框 iOS 渲染 bug 已修复**：`.tasks-check-item input[type="checkbox"]` 加 `appearance:none` 完全自绘（圆角边框/未勾选半透明底/勾选薄荷绿 `#14b8a6`+SVG 白对勾）。关键坑：全局 `input` 规则 padding 11px 14px + flex `min-width:auto` 会把自绘 checkbox 撑到 30×46 → 必须 `padding:0; min-width:0; min-height:0`。已验证（Playwright 393×852 视口计算样式+点击切换+截图）。SW v82 |
 | 2026-08-31 | 已确认 | 底部导航悬浮图标居中：代码层四边 16px 绝对居中；用户照片"偏移"为拍摄透视，非 bug |
 | 2026-08-27 | `c302e1d` | 绘图：工具栏改单行横向滚动(修复按键重叠) + 画布改白色面板(网格/选中框/默认笔色适配白底) |
