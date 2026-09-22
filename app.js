@@ -1412,6 +1412,7 @@ const LINKS_STORAGE_KEY = "mobile-ledger-links-v1";
 
 // 默认网址（首次使用）：绘图(Excalidraw) + 常用网站
 const DEFAULT_LINKS = [
+  { name: "支付宝充值", url: "alipays://", emoji: "💰", color: 8, alipay: true },
   { name: "校园卡充值", url: "https://hub.17wanxiao.com/bsacs/light.action?flag=weixingroup_zjkkjxycz&paytype=weixin&ecardFunc=index", emoji: "💳", color: 11, wechat: true },
   { name: "智能水电", url: "https://xqh5.17wanxiao.com/", emoji: "⚡", color: 6, wechat: true },
   { name: "绘图", url: "https://excalidraw.com/", emoji: "🎨", color: 0 },
@@ -1444,6 +1445,16 @@ function loadNavLinks() {
   } catch (e) {
     navLinks = DEFAULT_LINKS.map((l) => ({ ...l }));
   }
+  // v85 一次性迁移：为已有数据补充「支付宝充值」入口
+  try {
+    if (localStorage.getItem("mobile-ledger-links-migrate-v85") !== "1") {
+      if (!navLinks.some((l) => l.alipay)) {
+        navLinks.push({ name: "支付宝充值", url: "alipays://", emoji: "💰", color: 8, alipay: true });
+        saveNavLinks();
+      }
+      localStorage.setItem("mobile-ledger-links-migrate-v85", "1");
+    }
+  } catch (e) {}
 }
 
 function saveNavLinks() {
@@ -1477,6 +1488,10 @@ function renderLinksGrid() {
     // 点击 → 跳转；微信专属站点：一键复制链接 + 直接拉起微信（复制失败才弹手动面板兜底）
     item.addEventListener("click", () => {
       if (!link.url) return;
+      if (link.alipay) {
+        handleAlipayLink(link);
+        return;
+      }
       if (link.wechat) {
         handleWechatLink(link);
         return;
@@ -1640,6 +1655,13 @@ function showToast(msg) {
   toast.classList.add("show");
   window.clearTimeout(showToast._timer);
   showToast._timer = window.setTimeout(() => toast.classList.remove("show"), 2600);
+}
+
+// 支付宝通道：复制「完美校园」搜索词 + 拉起支付宝（绕开微信授权墙）
+async function handleAlipayLink() {
+  showToast("💰 正在打开支付宝…");
+  await copyText("完美校园");
+  window.setTimeout(() => { window.location.href = "alipays://"; }, 350);
 }
 
 // 一键流：复制成功 → 提示 + 直接跳微信；失败 → 弹手动面板兜底
