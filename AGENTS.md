@@ -61,6 +61,7 @@
    - 流程：create blobs → create tree → create commit → update ref
 4. **推送后**：更新本文件的「当前版本」和「最近变更」
 5. **推送无需等用户确认**（用户明确要求自动推送）
+6. **本文件写入无需批准**（2026-08-31 起）：已关闭 Hermes 的 `security.protected_instruction_files` 保护，AGENTS.md 可直接写入，不再弹批准窗。如需恢复：`hermes config set security.protected_instruction_files true`
 
 ## 🚨 版本推送 SOP（新会话必读，按此执行勿再摸索）
 
