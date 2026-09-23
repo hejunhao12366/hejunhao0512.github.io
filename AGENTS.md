@@ -44,16 +44,16 @@
 
 ## 当前版本
 
-- **PWA 缓存**：`v86`
-- **HTML asset 版本**：`?v=86`（styles.css / app.js / drawing.js）
-- **最新 commit**：`58426de` — 撤销微信/支付宝跳转，恢复直接打开网站
+- **PWA 缓存**：`v87`
+- **HTML asset 版本**：`?v=87`（styles.css / app.js / drawing.js）
+- **最新 commit**：`f921709` — 修复备忘录 5 项（任务编辑/移动、阶段目标日期、导航长按、topbar 对齐）
 
 ## ⚠️ 修改规则（每次改动必须遵守）
 
-1. **改 CSS/JS 后**：递增 cache 版本（`v86`→`v87`），同步更新 3 处：
+1. **改 CSS/JS 后**：递增 cache 版本（`v87`→`v88`），同步更新 3 处：
    - `service-worker.js` 的 `cacheName`
-   - `service-worker.js` 的 assets 列表（`?v=87`）
-   - `index.html` 的 `<link>` / `<script>` 标签（`?v=87`）
+   - `service-worker.js` 的 assets 列表（`?v=88`）
+   - `index.html` 的 `<link>` / `<script>` 标签（`?v=88`）
 2. **验证**：用 Node 脚本做静态检查（语法 + 关键内容存在性），确保通过后再推送
 3. **推送**：`git push` 被墙（git insteadOf 镜像规则），用 **GitHub REST API** 推送：
    - 脚本模板：写 Python 脚本到 `D:\tmp\hermes-push.py`，用后即删
@@ -149,6 +149,7 @@ pen（画笔）、rectangle、circle、line（直线）、arrow、text、select�
 
 | 日期 | Commit | 内容 |
 |------|--------|------|
+| 2026-08-31 | `f921709` | **备忘录 5 项修复（v87）**：①任务可编辑（点文字改名称/提示）+ 可移动（↑↓按钮，边界禁用）②删除无用的静态 ⏱/💰 标签 ③阶段新增「📅 目标日期」（自定义日期选择器，显示剩余天数：剩N天/就是今天/已过N天）④导航长按改用 `passive:false` + `preventDefault`，iOS 不再选中文字（编辑弹窗 500ms 仍正常）⑤topbar 改 `align-items:flex-start` + `.top-actions flex-shrink:0`，撤销/恢复按钮在全部 5 页顶部 16px 完全平齐（此前 center 对齐+mode-switch 隐藏时漂移）。无头实测：移动生效、日期按钮渲染、UR top 计算页=设置页=16px |
 | 2026-08-31 | `58426de` | **撤销微信/支付宝跳转（v86）**：用户决定不搞跳转 → 删除微信一键流、支付宝通道、帮助面板、copyText/showToast、wechat/alipay 标记、角标与开关样式，恢复「点击直接打开网站」。两个学校链接保留为普通链接。反向迁移 `mobile-ledger-links-migrate-v86` 清理手机上的「支付宝充值」残留 |
 | 2026-08-31 | `c6f8a6e` | ~~支付宝充值通道（v85）~~ 已撤销 |
 | 2026-08-31 | `3726651` | **微信链接一键流**（v84）：用户嫌 4 步面板麻烦 → 点击微信专属链接直接「自动复制 + 拉起微信 + 顶部 toast 提示」，用户只需在微信粘贴。复制失败才弹手动面板兜底。`copyText()`（clipboard+execCommand）/`showToast()`/`handleWechatLink()` |
