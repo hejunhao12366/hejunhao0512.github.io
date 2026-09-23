@@ -1814,7 +1814,8 @@ function renderTasksView() {
   const checklist = document.getElementById("tasksChecklist");
   checklist.innerHTML = "";
   stage.items.forEach((item, idx) => {
-    const row = document.createElement("label");
+    // 用 div 而非 label：label 会把行内任意点击都转发给 checkbox（点文字编辑时误触"完成"）
+    const row = document.createElement("div");
     row.className = "tasks-check-item" + (item.done ? " done" : "");
     row.innerHTML = `
       <input type="checkbox" ${item.done ? "checked" : ""} />
