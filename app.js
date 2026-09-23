@@ -1491,13 +1491,14 @@ function renderLinksGrid() {
     // 长按 → 编辑
     let pressTimer = null;
     const cancelPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+    // user-select:none(CSS) + 长按编辑；preventDefault 需非 passive 才能拦截 iOS 文字选择
     item.addEventListener("touchstart", (e) => {
       cancelPress();
+      if (e.touches.length === 1) e.preventDefault(); // 阻止 iOS 长按选中文本/呼出放大镜
       pressTimer = setTimeout(() => {
-        e.preventDefault();
         openLinkModal(i);
       }, 500);
-    }, { passive: true });
+    }, { passive: false });
     item.addEventListener("touchend", cancelPress);
     item.addEventListener("touchmove", cancelPress);
     item.addEventListener("contextmenu", (e) => { e.preventDefault(); openLinkModal(i); });
@@ -1793,8 +1794,19 @@ function renderTasksView() {
   document.getElementById("tasksStageKicker").textContent = `阶段 ${plan.currentStage + 1}`;
   document.getElementById("tasksStageTitle").textContent = stage.title;
   document.getElementById("tasksStageDesc").textContent = stage.desc || "";
-  document.getElementById("tasksStageTime").textContent = `⏱ ${stage.time || "—"}`;
-  document.getElementById("tasksStageCost").textContent = `💰 ${stage.cost || "—"}`;
+  // 目标日期（自定义）：点击可修改；显示剩余天数
+  const stageDateEl = document.getElementById("tasksStageDate");
+  const stageDateTip = document.getElementById("tasksStageDateTip");
+  if (stage.targetDate) {
+    const end = new Date(stage.targetDate + "T00:00:00");
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const days = Math.round((end - today) / 86400000);
+    stageDateEl.textContent = `📅 ${stage.targetDate}`;
+    stageDateTip.textContent = days > 0 ? `剩 ${days} 天` : days === 0 ? "就是今天" : `已过 ${-days} 天`;
+  } else {
+    stageDateEl.textContent = "📅 设目标日期";
+    stageDateTip.textContent = "";
+  }
   const statusEl = document.getElementById("tasksStageStatus");
   statusEl.textContent = pct === 100 ? "✓ 已完成" : done > 0 ? "进行中" : "未开始";
   statusEl.className = "tasks-status" + (pct === 100 ? " done" : done > 0 ? " ongoing" : "");
@@ -1810,12 +1822,37 @@ function renderTasksView() {
         <span class="tasks-check-text">${escapeHtml(item.text)}</span>
         ${item.tip ? `<span class="tasks-check-tip">${escapeHtml(item.tip)}</span>` : ""}
       </div>
+      <button class="tasks-item-move" type="button" data-dir="-1" aria-label="上移" ${idx === 0 ? "disabled" : ""}>↑</button>
+      <button class="tasks-item-move" type="button" data-dir="1" aria-label="下移" ${idx === stage.items.length - 1 ? "disabled" : ""}>↓</button>
       <button class="tasks-item-del" type="button" aria-label="删除任务">×</button>
     `;
     row.querySelector("input").addEventListener("change", (e) => {
       item.done = e.target.checked;
       saveTaskBoard();
       renderTasksView();
+    });
+    // 点击任务文字 → 编辑（名称+提示）
+    row.querySelector(".tasks-check-body").addEventListener("click", () => {
+      const newText = window.prompt("修改任务名称：", item.text);
+      if (newText === null) return;
+      if (newText.trim()) item.text = newText.trim();
+      const newTip = window.prompt("修改提示（可留空）：", item.tip || "");
+      if (newTip !== null) item.tip = newTip.trim();
+      saveTaskBoard();
+      renderTasksView();
+    });
+    // ↑↓ 移动排序
+    row.querySelectorAll(".tasks-item-move").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const dir = Number(btn.dataset.dir);
+        const to = idx + dir;
+        if (to < 0 || to >= stage.items.length) return;
+        const moved = stage.items.splice(idx, 1)[0];
+        stage.items.splice(to, 0, moved);
+        saveTaskBoard();
+        renderTasksView();
+      });
     });
     row.querySelector(".tasks-item-del").addEventListener("click", () => {
       stage.items.splice(idx, 1);
@@ -1878,6 +1915,27 @@ function bindTaskManageButtons() {
     plan.currentStage = Math.min(plan.currentStage, plan.stages.length - 1);
     saveTaskBoard();
     renderTasksView();
+  });
+
+  // 目标日期：点击修改（HTML5 date 弹窗，留空即清除）
+  document.getElementById("tasksStageDate")?.addEventListener("click", () => {
+    const plan = getPlan();
+    const stage = plan.stages[plan.currentStage];
+    if (!stage) return;
+    const input = document.createElement("input");
+    input.type = "date";
+    input.value = stage.targetDate || "";
+    input.style.cssText = "position:fixed;opacity:0;top:50%;left:50%;";
+    document.body.appendChild(input);
+    input.addEventListener("change", () => {
+      stage.targetDate = input.value || "";
+      input.remove();
+      saveTaskBoard();
+      renderTasksView();
+    });
+    input.addEventListener("blur", () => { input.remove(); });
+    input.showPicker ? input.showPicker() : input.focus();
+    input.click();
   });
 
   document.getElementById("tasksDeletePlanBtn")?.addEventListener("click", () => {

@@ -404,11 +404,12 @@ textarea {
    ============================================================ */
 .topbar {
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* ⑤ 修复：左列高度变化时右侧按钮不上浮，与其他页平齐 */
   justify-content: space-between;
   margin-bottom: 20px;
   padding: 0 2px;
 }
+.top-actions { flex-shrink: 0; }
 
 .topbar > div:first-child {
   display: flex;
@@ -2082,7 +2083,6 @@ body[data-mode="holiday"] .school-only { display: none; }
 
 /* 在校/假期切换：仅在计算页显示（body[data-view] 由 switchView 维护） */
 body:not([data-view="calculatorView"]) .mode-switch { display: none; }
-body:not([data-view="calculatorView"]) .topbar > div:first-child .time-text { margin-top: 6px; }
 
 /* 任务添加/管理按钮 */
 .tasks-add-btn {
@@ -2213,3 +2213,33 @@ body:not([data-view="calculatorView"]) .topbar > div:first-child .time-text { ma
 .tasks-plan-chip:active { transform: scale(0.94); }
 
 
+
+/* 任务：目标日期按钮 + ↑↓ 移动按钮 */
+.tasks-meta-date {
+  border: 1px solid rgba(94, 234, 212, 0.25);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+}
+.tasks-meta-date:active { background: rgba(94, 234, 212, 0.12); }
+.tasks-item-move {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted-2);
+  font-size: 13px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+  align-self: center;
+}
+.tasks-item-move:active:not(:disabled) { background: rgba(94, 234, 212, 0.25); color: var(--mint); }
+.tasks-item-move:disabled { opacity: 0.25; }
+.tasks-check-body { cursor: pointer; }
