@@ -1482,25 +1482,38 @@ function renderLinksGrid() {
     item.appendChild(icon);
     item.appendChild(label);
 
-    // 点击 → 直接打开网站
-    item.addEventListener("click", () => {
-      if (!link.url) return;
-      window.open(link.url, "_blank", "noopener");
-    });
-
-    // 长按 → 编辑
+    // 触摸（iOS）：touchstart preventDefault 会吞掉原生 click，跳转由 touchend 派发
+    // 桌面：鼠标 click 直接跳转
+    // 长按 500ms：编辑弹窗（不跳转）
     let pressTimer = null;
+    let longFired = false;
+    let openedAt = 0;
     const cancelPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
-    // user-select:none(CSS) + 长按编辑；preventDefault 需非 passive 才能拦截 iOS 文字选择
+    const openLink = () => {
+      if (!link.url) return;
+      openedAt = Date.now();
+      window.open(link.url, "_blank", "noopener");
+    };
     item.addEventListener("touchstart", (e) => {
       cancelPress();
-      if (e.touches.length === 1) e.preventDefault(); // 阻止 iOS 长按选中文本/呼出放大镜
+      longFired = false;
+      if (e.touches.length === 1) e.preventDefault(); // 阻止 iOS 长按选中文本 + 阻止合成 click
       pressTimer = setTimeout(() => {
+        longFired = true;
         openLinkModal(i);
       }, 500);
     }, { passive: false });
-    item.addEventListener("touchend", cancelPress);
     item.addEventListener("touchmove", cancelPress);
+    item.addEventListener("touchend", (e) => {
+      cancelPress();
+      // 短按松手 → 跳转（原生 click 已被吞，这里手动派发）
+      if (!longFired && Date.now() - openedAt > 600) openLink();
+    });
+    item.addEventListener("click", (e) => {
+      // 桌面鼠标；或 iOS 上 preventDefault 未生效时。刚跳转过（600ms 内）不重复
+      if (longFired || Date.now() - openedAt < 600) return;
+      openLink();
+    });
     item.addEventListener("contextmenu", (e) => { e.preventDefault(); openLinkModal(i); });
 
     grid.appendChild(item);
@@ -1918,25 +1931,45 @@ function bindTaskManageButtons() {
     renderTasksView();
   });
 
-  // 目标日期：点击修改（HTML5 date 弹窗，留空即清除）
+  // 目标日期：点击修改。用可见的行内 date input + showPicker（iOS Safari 支持），
+  // 不用隐藏 input——blur 会在日历展开瞬间移除元素导致选择器立即关闭（v88 bug）
   document.getElementById("tasksStageDate")?.addEventListener("click", () => {
     const plan = getPlan();
     const stage = plan.stages[plan.currentStage];
     if (!stage) return;
-    const input = document.createElement("input");
-    input.type = "date";
-    input.value = stage.targetDate || "";
-    input.style.cssText = "position:fixed;opacity:0;top:50%;left:50%;";
-    document.body.appendChild(input);
-    input.addEventListener("change", () => {
+
+    // 防重复打开
+    if (document.getElementById("stageDatePicker")) return;
+
+    const wrap = document.createElement("div");
+    wrap.id = "stageDatePicker";
+    wrap.className = "stage-date-picker";
+    wrap.innerHTML = `
+      <input type="date" value="${stage.targetDate || ""}" />
+      <button type="button" class="primary" data-act="ok">确定</button>
+      <button type="button" class="ghost-button" data-act="clear">清除</button>
+    `;
+    const input = wrap.querySelector("input");
+
+    const close = () => { wrap.remove(); };
+    wrap.querySelector('[data-act="ok"]').addEventListener("click", () => {
       stage.targetDate = input.value || "";
-      input.remove();
+      close();
       saveTaskBoard();
       renderTasksView();
     });
-    input.addEventListener("blur", () => { input.remove(); });
-    input.showPicker ? input.showPicker() : input.focus();
-    input.click();
+    wrap.querySelector('[data-act="clear"]').addEventListener("click", () => {
+      stage.targetDate = "";
+      close();
+      saveTaskBoard();
+      renderTasksView();
+    });
+
+    const meta = document.querySelector("#tasksView .tasks-meta");
+    meta.appendChild(wrap);
+    // iOS Safari：必须同步用户手势内调用 showPicker
+    if (input.showPicker) { try { input.showPicker(); } catch (e) {} }
+    input.focus();
   });
 
   document.getElementById("tasksDeletePlanBtn")?.addEventListener("click", () => {

@@ -2243,3 +2243,31 @@ body:not([data-view="calculatorView"]) .mode-switch { display: none; }
 .tasks-item-move:active:not(:disabled) { background: rgba(94, 234, 212, 0.25); color: var(--mint); }
 .tasks-item-move:disabled { opacity: 0.25; }
 .tasks-check-body { cursor: pointer; }
+
+/* 阶段目标日期行内选择器 */
+.stage-date-picker {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+  margin-top: 8px;
+}
+.stage-date-picker input[type="date"] {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+}
+.stage-date-picker .primary {
+  flex-shrink: 0;
+  padding: 8px 14px;
+}
+.stage-date-picker .ghost-button {
+  flex-shrink: 0;
+  padding: 8px 12px;
+}
