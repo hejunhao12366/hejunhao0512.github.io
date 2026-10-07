@@ -44,16 +44,16 @@
 
 ## 当前版本
 
-- **PWA 缓存**：`v88`
-- **HTML asset 版本**：`?v=88`（styles.css / app.js / drawing.js）
-- **最新 commit**：`fc196af` — 任务行 label→div：点文字编辑不再误触完成
+- **PWA 缓存**：`v89`
+- **HTML asset 版本**：`?v=89`（styles.css / app.js / drawing.js）
+- **最新 commit**：`b8b03b3` — 修复导航点不了 + 阶段日期选择器失效
 
 ## ⚠️ 修改规则（每次改动必须遵守）
 
-1. **改 CSS/JS 后**：递增 cache 版本（`v88`→`v89`），同步更新 3 处：
+1. **改 CSS/JS 后**：递增 cache 版本（`v89`→`v90`），同步更新 3 处：
    - `service-worker.js` 的 `cacheName`
-   - `service-worker.js` 的 assets 列表（`?v=89`）
-   - `index.html` 的 `<link>` / `<script>` 标签（`?v=89`）
+   - `service-worker.js` 的 assets 列表（`?v=90`）
+   - `index.html` 的 `<link>` / `<script>` 标签（`?v=90`）
 2. **验证**：用 Node 脚本做静态检查（语法 + 关键内容存在性），确保通过后再推送
 3. **推送**：`git push` 被墙（git insteadOf 镜像规则），用 **GitHub REST API** 推送：
    - 脚本模板：写 Python 脚本到 `D:\tmp\hermes-push.py`，用后即删
@@ -150,6 +150,7 @@ pen（画笔）、rectangle、circle、line（直线）、arrow、text、select�
 
 | 日期 | Commit | 内容 |
 |------|--------|------|
+| 2026-08-31 | `b8b03b3` | **修复导航点不了 + 阶段日期选择器失效（v89）**：①导航图标短按不跳转——v87 为拦截 iOS 长按选字加的 `touchstart preventDefault` 同时吞掉了合成 click；改为三通道互斥：touchend 派发跳转（600ms 防重复）+ 桌面 mouse click + 500ms 长按编辑 ②点「设目标日期」无反应——旧实现用隐藏 input，`showPicker()` 展开日历的瞬间 blur 处理器就把 input 移除导致选择器立即关闭；改为行内可见日期行（input + 确定/清除按钮），无 blur 竞态。无头实测：短按正确打开 17wanxiao URL、日期成功保存为 2026-10-15 且显示「剩 8 天」 |
 | 2026-08-31 | `fc196af` | **任务行 label→div（v88）**：修复「点文字编辑时误触完成任务」——根因是任务行用 `<label>` 包裹 checkbox，行内任意点击都会转发给 checkbox。改 `<div>` 后：点文字=仅编辑、点方框=仅切换完成。无头实测：点文字后完成数不变+改名生效；点方框不弹 prompt |
 | 2026-08-31 | `f921709` | **备忘录 5 项修复（v87）**：①任务可编辑（点文字改名称/提示）+ 可移动（↑↓按钮，边界禁用）②删除无用的静态 ⏱/💰 标签 ③阶段新增「📅 目标日期」（自定义日期选择器，显示剩余天数：剩N天/就是今天/已过N天）④导航长按改用 `passive:false` + `preventDefault`，iOS 不再选中文字（编辑弹窗 500ms 仍正常）⑤topbar 改 `align-items:flex-start` + `.top-actions flex-shrink:0`，撤销/恢复按钮在全部 5 页顶部 16px 完全平齐（此前 center 对齐+mode-switch 隐藏时漂移）。无头实测：移动生效、日期按钮渲染、UR top 计算页=设置页=16px |
 | 2026-08-31 | `58426de` | **撤销微信/支付宝跳转（v86）**：用户决定不搞跳转 → 删除微信一键流、支付宝通道、帮助面板、copyText/showToast、wechat/alipay 标记、角标与开关样式，恢复「点击直接打开网站」。两个学校链接保留为普通链接。反向迁移 `mobile-ledger-links-migrate-v86` 清理手机上的「支付宝充值」残留 |
