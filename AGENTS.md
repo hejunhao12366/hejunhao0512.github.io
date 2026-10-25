@@ -44,9 +44,9 @@
 
 ## 当前版本
 
-- **PWA 缓存**：`v89`
-- **HTML asset 版本**：`?v=89`（styles.css / app.js / drawing.js）
-- **最新 commit**：`b8b03b3` — 修复导航点不了 + 阶段日期选择器失效
+- **PWA 缓存**：`v90`
+- **HTML asset 版本**：`?v=90`（styles.css / app.js / drawing.js）
+- **最新 commit**：`858cf30` — 总欠支持自定义欠款项（动态 debtItems，旧数据自动迁移）
 
 ## ⚠️ 修改规则（每次改动必须遵守）
 
@@ -150,6 +150,7 @@ pen（画笔）、rectangle、circle、line（直线）、arrow、text、select�
 
 | 日期 | Commit | 内容 |
 |------|--------|------|
+| 2026-10-26 | `858cf30` | **总欠支持自定义欠款项（v90）**：数据模型改 `debtItems[]`（id/name/color/total/monthlyDue/plan），不再固定白条+花呗。①总欠卡片公式行带名称标签（`白条 2382.52 + 花呗 590.76 = ...`），金额仍可点选行内编辑（path=`debtItems.N.total`）②公式下方管理条：每项一个胶囊（点名称改名、✕删除带确认），末尾「＋添加欠款」（prompt 输入名称+金额），配色盘 red/blue/mint/purple/yellow 循环③还款计划弹窗动态渲染每项的 12 个月视图④旧 `debts`/`monthlyRepay`/`repayPlan` 自动迁移到 debtItems（id 固定 baitiao/huabei 保计划数据），且每次 saveState 刷新旧字段镜像——未升级的旧设备拉云存档不会清零白条/花呗⑤公式行 `formula-main` 改 `flex-wrap:wrap`（名称+金额 `.formula-group` 成组不拆散），多项时自动换行不再横向截断总和⑥修复：全新安装走 `clone(sampleState)` 不过 normalizeState 导致镜像缺失。无头实测 23/23：添加/改名/删除/撤销/刷新持久化/行内改数/弹窗3分区/进度累计/v89旧格式迁移全过；4项长名称 DOM 实测 0 重叠 0 溢出 |
 | 2026-08-31 | `b8b03b3` | **修复导航点不了 + 阶段日期选择器失效（v89）**：①导航图标短按不跳转——v87 为拦截 iOS 长按选字加的 `touchstart preventDefault` 同时吞掉了合成 click；改为三通道互斥：touchend 派发跳转（600ms 防重复）+ 桌面 mouse click + 500ms 长按编辑 ②点「设目标日期」无反应——旧实现用隐藏 input，`showPicker()` 展开日历的瞬间 blur 处理器就把 input 移除导致选择器立即关闭；改为行内可见日期行（input + 确定/清除按钮），无 blur 竞态。无头实测：短按正确打开 17wanxiao URL、日期成功保存为 2026-10-15 且显示「剩 8 天」 |
 | 2026-08-31 | `fc196af` | **任务行 label→div（v88）**：修复「点文字编辑时误触完成任务」——根因是任务行用 `<label>` 包裹 checkbox，行内任意点击都会转发给 checkbox。改 `<div>` 后：点文字=仅编辑、点方框=仅切换完成。无头实测：点文字后完成数不变+改名生效；点方框不弹 prompt |
 | 2026-08-31 | `f921709` | **备忘录 5 项修复（v87）**：①任务可编辑（点文字改名称/提示）+ 可移动（↑↓按钮，边界禁用）②删除无用的静态 ⏱/💰 标签 ③阶段新增「📅 目标日期」（自定义日期选择器，显示剩余天数：剩N天/就是今天/已过N天）④导航长按改用 `passive:false` + `preventDefault`，iOS 不再选中文字（编辑弹窗 500ms 仍正常）⑤topbar 改 `align-items:flex-start` + `.top-actions flex-shrink:0`，撤销/恢复按钮在全部 5 页顶部 16px 完全平齐（此前 center 对齐+mode-switch 隐藏时漂移）。无头实测：移动生效、日期按钮渲染、UR top 计算页=设置页=16px |
