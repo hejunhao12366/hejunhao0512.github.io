@@ -3,18 +3,15 @@ const oldStoreKeys = ["mobile-ledger-state-v1"];
 const createId = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
+const DEBT_PALETTE = ["red", "blue", "mint", "purple", "yellow"];
+
 const sampleState = {
   mode: "school",
-  debts: {
-    baitiao: 2382.52,
-    huabei: 590.76,
-  },
-  monthlyRepay: {
-    baitiao: 264.84,
-    huabei: 590.76,
-  },
+  debtItems: [
+    { id: "baitiao", name: "白条", color: "red", total: 2382.52, monthlyDue: 264.84, plan: [] },
+    { id: "huabei", name: "花呗", color: "blue", total: 590.76, monthlyDue: 590.76, plan: [] },
+  ],
   livingFee: 1500,
-  repayPlan: { baitiao: [], huabei: [] },
   installmentAmount: 590.76,
   installmentMonths: 3,
   installmentNote: "",
@@ -59,7 +56,7 @@ function loadState() {
     try {
       return normalizeState(JSON.parse(saved));
     } catch {
-      return clone(sampleState);
+      return normalizeState(clone(sampleState));
     }
   }
 
@@ -69,11 +66,11 @@ function loadState() {
     try {
       return migrateOldState(JSON.parse(oldSaved));
     } catch {
-      return clone(sampleState);
+      return normalizeState(clone(sampleState));
     }
   }
 
-  return clone(sampleState);
+  return normalizeState(clone(sampleState));
 }
 
 function migrateOldState(oldState) {
@@ -81,36 +78,71 @@ function migrateOldState(oldState) {
   const huabei = oldState.accounts?.find((account) => account.id === "huabei") || oldState.accounts?.[1];
   return normalizeState({
     ...clone(sampleState),
-    debts: {
-      baitiao: Number(baitiao?.total || sampleState.debts.baitiao),
-      huabei: Number(huabei?.total || sampleState.debts.huabei),
-    },
-    monthlyRepay: {
-      baitiao: Number(baitiao?.monthlyDue || oldState.currentBaitiaoDue || sampleState.monthlyRepay.baitiao),
-      huabei: Number(huabei?.monthlyDue || huabei?.total || sampleState.monthlyRepay.huabei),
-    },
+    debtItems: [
+      { id: "baitiao", name: "白条", color: "red", total: Number(baitiao?.total || 2382.52), monthlyDue: Number(baitiao?.monthlyDue || oldState.currentBaitiaoDue || 264.84), plan: [] },
+      { id: "huabei", name: "花呗", color: "blue", total: Number(huabei?.total || 590.76), monthlyDue: Number(huabei?.monthlyDue || huabei?.total || 590.76), plan: [] },
+    ],
     livingFee: Number(oldState.budget || sampleState.livingFee),
     installmentAmount: Number(oldState.installmentTotal || sampleState.installmentAmount),
     installmentMonths: Number(oldState.periods || sampleState.installmentMonths),
   });
 }
 
+function normalizePlan(raw) {
+  return Array.isArray(raw) ? raw.map(m => ({ month: String(m.month || ""), amount: Number(m.amount || 0), paid: Boolean(m.paid) })) : [];
+}
+
+function normalizeDebtItems(nextState) {
+  // 新格式优先：debtItems 数组（可为空 = 用户删光了欠款）
+  if (Array.isArray(nextState.debtItems)) {
+    return nextState.debtItems.map((item, i) => ({
+      id: String(item.id || createId()),
+      name: String(item.name || `欠款${i + 1}`),
+      // color 仅允许调色板白名单（会拼进 innerHTML）
+      color: DEBT_PALETTE.includes(item.color) ? item.color : DEBT_PALETTE[i % DEBT_PALETTE.length],
+      total: Number(item.total || 0),
+      monthlyDue: Number(item.monthlyDue || 0),
+      plan: normalizePlan(item.plan),
+    }));
+  }
+  // 旧格式迁移：debts / monthlyRepay / repayPlan（固定白条+花呗）
+  if (nextState.debts || nextState.monthlyRepay || nextState.repayPlan) {
+    return [
+      { id: "baitiao", name: "白条", color: "red" },
+      { id: "huabei", name: "花呗", color: "blue" },
+    ].map(({ id, name, color }) => ({
+      id,
+      name,
+      color,
+      total: Number(nextState.debts?.[id] || 0),
+      monthlyDue: Number(nextState.monthlyRepay?.[id] || 0),
+      plan: normalizePlan(nextState.repayPlan?.[id]),
+    }));
+  }
+  // 全新安装 → 默认两项
+  return clone(sampleState.debtItems);
+}
+
+// 旧字段镜像（debts/monthlyRepay/repayPlan）：新代码只读 debtItems；
+// 镜像仅供尚未升级的旧设备拉取后不至清零白条/花呗
+function legacyDebtMirrors(items) {
+  const find = (id) => items.find((item) => item.id === id);
+  const bt = find("baitiao");
+  const hb = find("huabei");
+  return {
+    debts: { baitiao: bt ? bt.total : 0, huabei: hb ? hb.total : 0 },
+    monthlyRepay: { baitiao: bt ? bt.monthlyDue : 0, huabei: hb ? hb.monthlyDue : 0 },
+    repayPlan: { baitiao: bt ? clone(bt.plan) : [], huabei: hb ? clone(hb.plan) : [] },
+  };
+}
+
 function normalizeState(nextState) {
+  const debtItems = normalizeDebtItems(nextState);
   return {
     mode: nextState.mode === "holiday" ? "holiday" : "school",
-    debts: {
-      baitiao: Number(nextState.debts?.baitiao || 0),
-      huabei: Number(nextState.debts?.huabei || 0),
-    },
-    monthlyRepay: {
-      baitiao: Number(nextState.monthlyRepay?.baitiao || 0),
-      huabei: Number(nextState.monthlyRepay?.huabei || 0),
-    },
+    debtItems,
+    ...legacyDebtMirrors(debtItems),
     livingFee: Number(nextState.livingFee || 0),
-    repayPlan: {
-      baitiao: Array.isArray(nextState.repayPlan?.baitiao) ? nextState.repayPlan.baitiao.map(m => ({ month: String(m.month || ""), amount: Number(m.amount || 0), paid: Boolean(m.paid) })) : [],
-      huabei: Array.isArray(nextState.repayPlan?.huabei) ? nextState.repayPlan.huabei.map(m => ({ month: String(m.month || ""), amount: Number(m.amount || 0), paid: Boolean(m.paid) })) : [],
-    },
     installmentAmount: Number(nextState.installmentAmount || 0),
     installmentMonths: Math.max(1, Number(nextState.installmentMonths || 1)),
     installmentNote: String(nextState.installmentNote || ""),
@@ -142,6 +174,8 @@ function normalizeState(nextState) {
 
 function saveState({ upload = true, touch = true } = {}) {
   if (!applyingCloudState && touch) state.sync.updatedAt = Date.now();
+  // 每次保存前刷新旧字段镜像，保证旧版本设备拉到的白条/花呗数据是最新的
+  Object.assign(state, legacyDebtMirrors(state.debtItems));
   localStorage.setItem(storeKey, JSON.stringify(state));
   updateHistoryButtons();
   if (upload) queueCloudUpload();
@@ -183,9 +217,10 @@ function renderDashboard() {
   renderDaily();
 }
 
-function getRepayProgress(key) {
+function getRepayProgress(id) {
   // 已还进度 = 标记为 paid 的月份金额之和 ÷ 计划总额
-  const plan = state.repayPlan?.[key] || [];
+  const item = state.debtItems.find((i) => i.id === id);
+  const plan = item?.plan || [];
   if (plan.length === 0) return { percent: 0, paid: 0, total: 0 };
   const total = plan.reduce((s, m) => s + Number(m.amount || 0), 0);
   const paid = plan.filter(m => m.paid).reduce((s, m) => s + Number(m.amount || 0), 0);
@@ -194,33 +229,37 @@ function getRepayProgress(key) {
 }
 
 function renderDebt() {
-  renderFormula("#debtFormula", "共", [
-    { color: "red", value: state.debts.baitiao, path: "debts.baitiao" },
-    { color: "blue", value: state.debts.huabei, path: "debts.huabei" },
-  ]);
+  renderFormula("#debtFormula", "共", state.debtItems.map((item, i) => ({
+    label: item.name,
+    color: item.color,
+    value: item.total,
+    path: `debtItems.${i}.total`,
+  })));
 
-  // 总进度 = 两路还款计划的加权平均
-  const bt = getRepayProgress("baitiao");
-  const hb = getRepayProgress("huabei");
-  const totalPaid = bt.paid + hb.paid;
-  const totalPlan = bt.total + hb.total;
+  // 总进度 = 全部欠款还款计划的加权平均
+  const totalPaid = state.debtItems.reduce((s, item) => s + getRepayProgress(item.id).paid, 0);
+  const totalPlan = state.debtItems.reduce((s, item) => s + getRepayProgress(item.id).total, 0);
   const percent = totalPlan > 0 ? Math.min(100, Math.round((totalPaid / totalPlan) * 100)) : 0;
 
   const fill = $("#repayProgressFill");
   const pct = $("#repayProgressPercent");
   if (fill) fill.style.width = percent + "%";
   if (pct) pct.textContent = percent + "%";
+
+  renderDebtManage();
 }
 
 function renderMonth() {
-  const normalRepay = state.monthlyRepay.baitiao + state.monthlyRepay.huabei;
+  const normalRepay = state.debtItems.reduce((s, item) => s + Number(item.monthlyDue || 0), 0);
   const installmentPerMonth = state.installmentAmount / state.installmentMonths;
   const splitRepay = Math.max(0, normalRepay - state.installmentAmount + installmentPerMonth);
 
-  renderFormula("#repayFormula", "本月待还：", [
-    { color: "red", value: state.monthlyRepay.baitiao, path: "monthlyRepay.baitiao" },
-    { color: "blue", value: state.monthlyRepay.huabei, path: "monthlyRepay.huabei" },
-  ]);
+  renderFormula("#repayFormula", "本月待还：", state.debtItems.map((item, i) => ({
+    label: item.name,
+    color: item.color,
+    value: item.monthlyDue,
+    path: `debtItems.${i}.monthlyDue`,
+  })));
 
   renderEditableText("#livingFeeText", state.livingFee, "livingFee");
   renderEditableText("#livingFeeSplitText", state.livingFee, "livingFee");
@@ -295,15 +334,93 @@ function formatYM(ym) {
   return `${y}年${Number(m)}月`;
 }
 
-function ensurePlanMonth(key, month) {
-  state.repayPlan[key] = state.repayPlan[key] || [];
-  let entry = state.repayPlan[key].find(e => e.month === month);
+function ensurePlanMonth(id, month) {
+  const item = state.debtItems.find((i) => i.id === id);
+  if (!item) return null;
+  item.plan = item.plan || [];
+  let entry = item.plan.find(e => e.month === month);
   if (!entry) {
     entry = { month, amount: 0, paid: false };
-    state.repayPlan[key].push(entry);
-    state.repayPlan[key].sort((a, b) => a.month.localeCompare(b.month));
+    item.plan.push(entry);
+    item.plan.sort((a, b) => a.month.localeCompare(b.month));
   }
   return entry;
+}
+
+// ── 自定义欠款：添加 / 改名 / 删除 ──
+function addDebtItem() {
+  const name = (prompt("欠款名称（如：美团、京东）：") || "").trim();
+  if (!name) return;
+  const amountStr = prompt("欠款总金额：", "0");
+  if (amountStr === null) return;
+  const total = Number(amountStr);
+  if (isNaN(total) || total < 0) { alert("金额无效"); return; }
+  rememberState();
+  state.debtItems.push({
+    id: createId(),
+    name,
+    color: DEBT_PALETTE[state.debtItems.length % DEBT_PALETTE.length],
+    total,
+    monthlyDue: 0,
+    plan: [],
+  });
+  saveState();
+  renderAll();
+}
+
+function renameDebtItem(id) {
+  const item = state.debtItems.find((i) => i.id === id);
+  if (!item) return;
+  const name = (prompt("新的名称：", item.name) || "").trim();
+  if (!name || name === item.name) return;
+  rememberState();
+  item.name = name;
+  saveState();
+  renderAll();
+}
+
+function removeDebtItem(id) {
+  const item = state.debtItems.find((i) => i.id === id);
+  if (!item) return;
+  if (!confirm(`删除「${item.name}」？其还款计划也会一并删除。`)) return;
+  rememberState();
+  state.debtItems = state.debtItems.filter((i) => i.id !== id);
+  saveState();
+  renderAll();
+}
+
+function renderDebtManage() {
+  const bar = $("#debtManageBar");
+  if (!bar) return;
+  bar.innerHTML = "";
+
+  state.debtItems.forEach((item) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "debt-chip";
+    chip.title = "点击改名";
+    chip.innerHTML = `
+      <span class="dot ${item.color}"></span>
+      <span class="debt-chip-name">${escapeHtml(item.name)}</span>
+      <span class="debt-chip-x" role="button" title="删除">✕</span>
+    `;
+    chip.addEventListener("click", (e) => {
+      if (e.target.classList.contains("debt-chip-x")) {
+        e.stopPropagation();
+        removeDebtItem(item.id);
+      } else {
+        renameDebtItem(item.id);
+      }
+    });
+    bar.appendChild(chip);
+  });
+
+  const addBtn = document.createElement("button");
+  addBtn.type = "button";
+  addBtn.className = "debt-chip debt-chip-add";
+  addBtn.textContent = "＋ 添加欠款";
+  addBtn.addEventListener("click", addDebtItem);
+  bar.appendChild(addBtn);
 }
 
 function openRepayPlanModal() {
@@ -328,23 +445,30 @@ document.addEventListener("click", (e) => {
 
 function renderRepayPlanModal() {
   const currentYM = getCurrentYM();
-  const keys = [
-    { key: "baitiao", label: "白条", color: "red" },
-    { key: "huabei", label: "花呗", color: "blue" },
-  ];
+  const sections = $("#repayPlanSections");
+  if (!sections) return;
+  sections.innerHTML = "";
 
-  keys.forEach(({ key, label, color }) => {
-    const container = $(`#planRows_${key}`);
-    if (!container) return;
-    container.innerHTML = "";
+  state.debtItems.forEach(({ id, name, color }) => {
+    const section = document.createElement("div");
+    section.className = "repay-plan-section";
+    section.innerHTML = `
+      <div class="repay-plan-title">
+        <span class="dot ${color}"></span>${escapeHtml(name)}
+        <span class="repay-plan-progress" id="planProgress_${id}"></span>
+      </div>
+      <div class="plan-rows" id="planRows_${id}"></div>
+    `;
+    sections.appendChild(section);
 
-    const plan = state.repayPlan[key] || [];
+    const container = section.querySelector(".plan-rows");
+    const plan = state.debtItems.find((i) => i.id === id).plan || [];
     // 展示：从当月起 12 个月
     const months = [];
     for (let i = 0; i < 12; i++) months.push(addMonthToYM(currentYM, i));
 
-    const prog = getRepayProgress(key);
-    const header = $(`#planProgress_${key}`);
+    const prog = getRepayProgress(id);
+    const header = document.getElementById(`planProgress_${id}`);
     if (header) header.textContent = `${prog.paid.toFixed(2)} / ${prog.total.toFixed(2)}（${prog.percent}%）`;
 
     months.forEach(ym => {
@@ -355,8 +479,8 @@ function renderRepayPlanModal() {
       row.className = "plan-row" + (isCurrent ? " current" : "") + (isPaid ? " paid" : "");
       row.innerHTML = `
         <span class="plan-month ${color}">${formatYM(ym)}${isCurrent ? " ·本月" : ""}</span>
-        <input type="number" step="0.01" min="0" value="${entry.amount}" data-key="${key}" data-month="${ym}" class="plan-amount-input" placeholder="0" />
-        <button type="button" class="plan-paid-toggle ${isPaid ? "done" : ""}" data-key="${key}" data-month="${ym}">${isPaid ? "✓已还" : "未还"}</button>
+        <input type="number" step="0.01" min="0" value="${entry.amount}" data-key="${id}" data-month="${ym}" class="plan-amount-input" placeholder="0" />
+        <button type="button" class="plan-paid-toggle ${isPaid ? "done" : ""}" data-key="${id}" data-month="${ym}">${isPaid ? "✓已还" : "未还"}</button>
       `;
       container.appendChild(row);
     });
@@ -369,6 +493,7 @@ function renderRepayPlanModal() {
       const m = e.target.dataset.month;
       const val = Math.max(0, Number(e.target.value) || 0);
       const entry = ensurePlanMonth(k, m);
+      if (!entry) return;
       entry.amount = val;
       saveState();
       renderDebt();
@@ -385,6 +510,7 @@ function renderRepayPlanModal() {
       const k = e.target.dataset.key;
       const m = e.target.dataset.month;
       const entry = ensurePlanMonth(k, m);
+      if (!entry) return;
       entry.paid = !entry.paid;
       saveState();
       renderDebt();
@@ -519,7 +645,18 @@ function renderFormula(selector, label, items) {
     value.className = `tag ${item.color}${item.path ? " editable-value" : ""}`;
     value.textContent = fmtMoney(item.value);
     if (item.path) value.dataset.path = item.path;
-    expression.append(value);
+    if (item.label) {
+      // 名称+金额成组（.formula-group），公式换行时不会被拆散
+      const group = document.createElement("span");
+      group.className = "formula-group";
+      const itemLabel = document.createElement("span");
+      itemLabel.className = "formula-item-label";
+      itemLabel.textContent = item.label;
+      group.append(itemLabel, value);
+      expression.append(group);
+    } else {
+      expression.append(value);
+    }
   });
 
   expression.append(textSpan("="));

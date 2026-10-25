@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=89" />
+    <link rel="stylesheet" href="./styles.css?v=90" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
@@ -84,6 +84,7 @@
             </button>
           </div>
           <div class="formula-line" id="debtFormula"></div>
+          <div class="debt-manage-bar" id="debtManageBar"></div>
           <div class="repay-progress">
             <div class="repay-progress-label">
               <span>已还</span>
@@ -311,8 +312,8 @@
       </nav>
     </main>
 
-    <script src="./app.js?v=89"></script>
-    <script src="./drawing.js?v=89"></script>
+    <script src="./app.js?v=90"></script>
+    <script src="./drawing.js?v=90"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first
@@ -343,20 +344,7 @@
           <button class="repay-plan-close" onclick="closeRepayPlanModal()">✕</button>
         </div>
         <div class="repay-plan-body">
-          <div class="repay-plan-section">
-            <div class="repay-plan-title">
-              <span class="dot red"></span>白条
-              <span class="repay-plan-progress" id="planProgress_baitiao"></span>
-            </div>
-            <div class="plan-rows" id="planRows_baitiao"></div>
-          </div>
-          <div class="repay-plan-section">
-            <div class="repay-plan-title">
-              <span class="dot blue"></span>花呗
-              <span class="repay-plan-progress" id="planProgress_huabei"></span>
-            </div>
-            <div class="plan-rows" id="planRows_huabei"></div>
-          </div>
+          <div id="repayPlanSections"></div>
           <p class="repay-plan-hint">填写每月计划还款金额，点「未还」标记为已还，进度条自动按已还月份累计。</p>
         </div>
       </div>

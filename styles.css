@@ -794,10 +794,9 @@ h2 {
 .formula-main {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px 8px;
   width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
   padding: 6px 2px 10px;
   white-space: nowrap;
   scrollbar-width: none;
@@ -805,8 +804,102 @@ h2 {
   font-weight: 700;
 }
 
+/* 名称+金额成组，换行时不拆散 */
+.formula-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
 .formula-main::-webkit-scrollbar,
 .balance-row::-webkit-scrollbar { display: none; }
+
+.formula-item-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+  letter-spacing: 0;
+  flex-shrink: 0;
+}
+
+/* ── 欠款管理条（自定义欠款：改名/删除/添加）── */
+.debt-manage-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 14px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.debt-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.debt-chip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.debt-chip-name {
+  color: var(--text);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debt-chip-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 11px;
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.debt-chip-x:active {
+  color: var(--red);
+  background: var(--red-soft);
+}
+
+.debt-chip-add {
+  color: var(--mint);
+  border-style: dashed;
+}
+
+/* dot / plan-month 颜色扩展（自定义欠款配色） */
+.debt-chip .dot.red, .repay-plan-title .dot.red { background: var(--red); }
+.debt-chip .dot.blue, .repay-plan-title .dot.blue { background: var(--blue); }
+.debt-chip .dot.mint, .repay-plan-title .dot.mint { background: var(--mint); }
+.debt-chip .dot.purple, .repay-plan-title .dot.purple { background: var(--purple); }
+.debt-chip .dot.yellow, .repay-plan-title .dot.yellow { background: var(--yellow); }
+
+.plan-month.mint { color: var(--mint); }
+.plan-month.purple { color: var(--purple); }
+.plan-month.yellow { color: var(--yellow); }
+
 
 .large {
   font-size: 22px;
