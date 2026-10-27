@@ -44,9 +44,9 @@
 
 ## 当前版本
 
-- **PWA 缓存**：`v90`
-- **HTML asset 版本**：`?v=90`（styles.css / app.js / drawing.js）
-- **最新 commit**：`858cf30` — 总欠支持自定义欠款项（动态 debtItems，旧数据自动迁移）
+- **PWA 缓存**：`v91`
+- **HTML asset 版本**：`?v=91`（styles.css / app.js / drawing.js）
+- **最新 commit**：`9f5653b` — 每天记录保存精确时间（时:分:秒）+ 修复 UTC 日期偏移
 
 ## ⚠️ 修改规则（每次改动必须遵守）
 
@@ -150,6 +150,7 @@ pen（画笔）、rectangle、circle、line（直线）、arrow、text、select�
 
 | 日期 | Commit | 内容 |
 |------|--------|------|
+| 2026-10-27 | `9f5653b` | **每天记录保存精确时间（v91）**：①「保存今日记录」新增 `time` 字段（本地 HH:MM:SS），记录卡片日期行显示 `10月27日 23:49:18 在校`（`.record-time` 小号灰字 tabular-nums），旧记录无 time 不显示②顺手修同类根因 bug：`toISOString()` 是 UTC——中国时区凌晨 0~8 点保存会记成前一天、月底保存可能归错月。统一改 `getLocalDateStr()` 本地日期，涉及 4 处：记录保存日期、记录月份分组默认展开判断、切假期模式的 `holidayStartDate`、`holidayEndDate`（+holidayDays 天，此前会偏早一天）。无头实测 11/11：时间格式/同日去重更新时间/刷新持久化/旧记录兼容/走势图正常；v90 欠款回归 12/12 |
 | 2026-10-26 | `858cf30` | **总欠支持自定义欠款项（v90）**：数据模型改 `debtItems[]`（id/name/color/total/monthlyDue/plan），不再固定白条+花呗。①总欠卡片公式行带名称标签（`白条 2382.52 + 花呗 590.76 = ...`），金额仍可点选行内编辑（path=`debtItems.N.total`）②公式下方管理条：每项一个胶囊（点名称改名、✕删除带确认），末尾「＋添加欠款」（prompt 输入名称+金额），配色盘 red/blue/mint/purple/yellow 循环③还款计划弹窗动态渲染每项的 12 个月视图④旧 `debts`/`monthlyRepay`/`repayPlan` 自动迁移到 debtItems（id 固定 baitiao/huabei 保计划数据），且每次 saveState 刷新旧字段镜像——未升级的旧设备拉云存档不会清零白条/花呗⑤公式行 `formula-main` 改 `flex-wrap:wrap`（名称+金额 `.formula-group` 成组不拆散），多项时自动换行不再横向截断总和⑥修复：全新安装走 `clone(sampleState)` 不过 normalizeState 导致镜像缺失。无头实测 23/23：添加/改名/删除/撤销/刷新持久化/行内改数/弹窗3分区/进度累计/v89旧格式迁移全过；4项长名称 DOM 实测 0 重叠 0 溢出 |
 | 2026-08-31 | `b8b03b3` | **修复导航点不了 + 阶段日期选择器失效（v89）**：①导航图标短按不跳转——v87 为拦截 iOS 长按选字加的 `touchstart preventDefault` 同时吞掉了合成 click；改为三通道互斥：touchend 派发跳转（600ms 防重复）+ 桌面 mouse click + 500ms 长按编辑 ②点「设目标日期」无反应——旧实现用隐藏 input，`showPicker()` 展开日历的瞬间 blur 处理器就把 input 移除导致选择器立即关闭；改为行内可见日期行（input + 确定/清除按钮），无 blur 竞态。无头实测：短按正确打开 17wanxiao URL、日期成功保存为 2026-10-15 且显示「剩 8 天」 |
 | 2026-08-31 | `fc196af` | **任务行 label→div（v88）**：修复「点文字编辑时误触完成任务」——根因是任务行用 `<label>` 包裹 checkbox，行内任意点击都会转发给 checkbox。改 `<div>` 后：点文字=仅编辑、点方框=仅切换完成。无头实测：点文字后完成数不变+改名生效；点方框不弹 prompt |
