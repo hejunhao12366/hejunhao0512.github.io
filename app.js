@@ -775,7 +775,7 @@ function renderDailyRecords() {
       card.innerHTML = `
         <div class="record-head">
           <div>
-            <div class="record-date">${formatRecordDate(record.date)} ${modeTag}</div>
+            <div class="record-date">${formatRecordDate(record.date)}${record.time ? ` <span class="record-time">${record.time}</span>` : ""} ${modeTag}</div>
             <div class="record-sub">${subText} ${record.daysUntilLivingFee} 天，每天可用</div>
           </div>
           <button class="delete-record" type="button" aria-label="删除记录" data-id="${record.id}">×</button>
@@ -795,7 +795,7 @@ function renderDailyRecords() {
     });
 
     // Collapse by default (except current month)
-    const nowYM = new Date().toISOString().slice(0, 7);
+    const nowYM = getCurrentYM();
     if (ym !== nowYM) {
       group.querySelector(".record-month-body").style.display = "none";
       group.querySelector(".record-month-arrow").textContent = "▸";
@@ -862,6 +862,20 @@ function formatSyncTime(timestamp) {
 function formatRecordDate(date) {
   const [, month, day] = date.split("-");
   return `${Number(month)}月${Number(day)}日`;
+}
+
+// 本地日期 YYYY-MM-DD（toISOString 是 UTC，凌晨保存会差一天）
+function getLocalDateStr(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// 本地时间 HH:MM:SS（记录保存时刻）
+function getLocalTimeStr(d = new Date()) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
 function escapeHtml(value) {
@@ -1079,13 +1093,15 @@ $("#debtForm").addEventListener("submit", (event) => {
 
 $("#saveDailyRecordButton").addEventListener("click", () => {
   rememberState();
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const today = getLocalDateStr(now);
   const totalBalance = getTotalBalance();
   const days = getDivisorDays();
   const divisor = Math.max(1, days);
   const record = {
     id: createId(),
     date: today,
+    time: getLocalTimeStr(now),
     mode: state.mode,
     totalBalance,
     daysUntilLivingFee: days,
@@ -1158,13 +1174,13 @@ document.querySelectorAll(".mode-opt").forEach((button) => {
     rememberState();
     state.mode = button.dataset.mode;
     if (state.mode === "holiday" && !state.holidayStartDate) {
-      state.holidayStartDate = new Date().toISOString().slice(0, 10);
+      state.holidayStartDate = getLocalDateStr();
     }
     if (state.mode === "holiday" && !state.holidayEndDate) {
       // 默认假期结束日期 = 今天 + holidayDays 天（旧数据兼容）
       const d = new Date();
       d.setDate(d.getDate() + state.holidayDays);
-      state.holidayEndDate = d.toISOString().slice(0, 10);
+      state.holidayEndDate = getLocalDateStr(d);
     }
     saveState();
     renderAll();
