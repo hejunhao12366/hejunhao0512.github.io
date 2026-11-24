@@ -1843,6 +1843,20 @@ body[data-mode="holiday"] .school-only { display: none; }
   transform: scale(0.9);
 }
 
+/* 拖动排序中：图标放大浮起（须在 :active 规则之后，同优先级时覆盖 scale(0.9)） */
+.link-item.dragging {
+  z-index: 5;
+}
+
+.link-item.dragging .link-icon {
+  transform: scale(1.12);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.link-item.dragging .link-label {
+  opacity: 0.55;
+}
+
 .link-icon-add {
   background: rgba(255, 255, 255, 0.07);
   border: 1.5px dashed rgba(255, 255, 255, 0.25);

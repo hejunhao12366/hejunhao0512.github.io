@@ -1635,32 +1635,123 @@ function renderLinksGrid() {
     item.appendChild(icon);
     item.appendChild(label);
 
+    item._linkRef = link; // 拖动排序提交时按 DOM 顺序回收链接对象
+
     // 触摸（iOS）：touchstart preventDefault 会吞掉原生 click，跳转由 touchend 派发
     // 桌面：鼠标 click 直接跳转
-    // 长按 500ms：编辑弹窗（不跳转）
+    // 长按 500ms 后拖动：排序；长按后不移动直接松手：编辑弹窗（不跳转）
+    // 桌面鼠标按住拖动：同样排序
     let pressTimer = null;
     let longFired = false;
     let openedAt = 0;
+    let dragArmed = false; // 长按已触发，进入可拖动状态
+    let dragMoved = false; // 本次拖动是否真的换了位置
     const cancelPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
     const openLink = () => {
       if (!link.url) return;
       openedAt = Date.now();
       window.open(link.url, "_blank", "noopener");
     };
+    const beginDrag = () => {
+      dragArmed = true;
+      dragMoved = false;
+      item.classList.add("dragging");
+    };
+    // 把被拖项移动到手指/鼠标当前悬停的格子位置（实时重排 DOM，仅视觉）
+    const dragOver = (clientX, clientY) => {
+      const el = document.elementFromPoint(clientX, clientY);
+      const target = el && el.closest ? el.closest(".link-item") : null;
+      if (!target || target === item || target.parentNode !== grid) return;
+      if (!target._linkRef) {
+        // 悬停在「+」添加按钮上 → 移到末尾（添加按钮之前）
+        if (item.nextSibling !== target) { grid.insertBefore(item, target); dragMoved = true; }
+        return;
+      }
+      const children = Array.from(grid.children);
+      const from = children.indexOf(item);
+      const to = children.indexOf(target);
+      if (from === -1 || to === -1 || from === to) return;
+      if (to < from) grid.insertBefore(item, target);
+      else grid.insertBefore(item, target.nextSibling);
+      dragMoved = true;
+    };
+    const endDrag = (commit) => {
+      item.classList.remove("dragging");
+      dragArmed = false;
+      if (commit && dragMoved) {
+        const ordered = [];
+        grid.querySelectorAll(".link-item").forEach((el) => { if (el._linkRef) ordered.push(el._linkRef); });
+        if (ordered.length === navLinks.length) { navLinks = ordered; saveNavLinks(); }
+        openedAt = Date.now(); // 吞掉拖动后紧随的 click
+        renderLinksGrid(); // 重渲染以重绑正确的下标
+      }
+      dragMoved = false;
+    };
     item.addEventListener("touchstart", (e) => {
       cancelPress();
       longFired = false;
+      dragArmed = false;
+      dragMoved = false;
       if (e.touches.length === 1) e.preventDefault(); // 阻止 iOS 长按选中文本 + 阻止合成 click
       pressTimer = setTimeout(() => {
         longFired = true;
-        openLinkModal(i);
+        beginDrag();
       }, 500);
     }, { passive: false });
-    item.addEventListener("touchmove", cancelPress);
+    item.addEventListener("touchmove", (e) => {
+      if (dragArmed) {
+        e.preventDefault();
+        const t = e.touches[0];
+        if (t) dragOver(t.clientX, t.clientY);
+      } else {
+        cancelPress();
+      }
+    }, { passive: false });
     item.addEventListener("touchend", (e) => {
       cancelPress();
+      if (dragArmed) {
+        if (dragMoved) { endDrag(true); return; }
+        // 长按未移动 → 编辑弹窗（原长按行为，改到松手时触发）
+        item.classList.remove("dragging");
+        dragArmed = false;
+        openLinkModal(i);
+        return;
+      }
       // 短按松手 → 跳转（原生 click 已被吞，这里手动派发）
       if (!longFired && Date.now() - openedAt > 600) openLink();
+    });
+    item.addEventListener("touchcancel", () => {
+      cancelPress();
+      if (dragArmed) {
+        item.classList.remove("dragging");
+        dragArmed = false;
+        dragMoved = false;
+        renderLinksGrid(); // 取消拖动，恢复原顺序
+      }
+    });
+    // 桌面鼠标拖动排序：移动超过 6px 进入拖动，松手提交；未拖动则走 click 跳转
+    item.addEventListener("mousedown", (e) => {
+      if (e.button !== 0) return;
+      longFired = false;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      let mouseDrag = false;
+      const onMove = (ev) => {
+        if (!mouseDrag) {
+          if (Math.hypot(ev.clientX - startX, ev.clientY - startY) < 6) return;
+          mouseDrag = true;
+          longFired = true; // 阻止本次 click 跳转
+          beginDrag();
+        }
+        dragOver(ev.clientX, ev.clientY);
+      };
+      const onUp = () => {
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+        if (mouseDrag) { endDrag(true); mouseDrag = false; }
+      };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
     });
     item.addEventListener("click", (e) => {
       // 桌面鼠标；或 iOS 上 preventDefault 未生效时。刚跳转过（600ms 内）不重复
