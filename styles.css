@@ -2061,22 +2061,23 @@ body[data-mode="holiday"] .school-only { display: none; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
+  align-self: center;
   min-height: 0;
   padding: 0;
   background: transparent;
   position: relative;
 }
 .nav-fab-circle {
-  width: 54px;
-  height: 54px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   background: linear-gradient(145deg, #5ac8fa, #007aff);
-  box-shadow: 0 6px 18px rgba(0, 122, 255, 0.45), 0 2px 6px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35), 0 2px 6px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   display: flex;           /* 图标在圆内 flex 居中 —— 绝对同心 */
   align-items: center;
   justify-content: center;
-  margin-top: -26px;       /* 凸出导航栏 */
+  margin-top: 0;           /* v98：不再凸出导航栏，圆心与导航栏居中对齐（用户要求） */
   transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
   flex-shrink: 0;
 }
