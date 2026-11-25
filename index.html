@@ -5,12 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>理财</title>
     <meta name="theme-color" content="#f2f2f7" />
+    <script>
+      // 外观主题：CSS 加载前先定好，避免深色用户打开闪白（与 app.js 的 applyTheme 同一 key）
+      try {
+        if (localStorage.getItem("mobile-ledger-theme-v1") === "dark") {
+          document.documentElement.dataset.theme = "dark";
+          document.querySelector('meta[name="theme-color"]').setAttribute("content", "#000000");
+        }
+      } catch (e) {}
+    </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="理财" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=95" />
+    <link rel="stylesheet" href="./styles.css?v=96" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
@@ -262,6 +271,17 @@
         </section>
 
 
+        <section class="app-card settings-card">
+          <div class="section-header">
+            <h2>外观</h2>
+            <div class="theme-switch" id="themeSwitch">
+              <button class="theme-opt" type="button" data-theme-opt="light">浅色</button>
+              <button class="theme-opt" type="button" data-theme-opt="dark">深色</button>
+            </div>
+          </div>
+          <p class="sync-help" style="margin-top:10px;">白天用浅色、晚上用深色，随时切。这个设置只记在这台设备上，不跟云同步走。</p>
+        </section>
+
         <section class="app-card settings-card sync-card">
           <div class="sync-head">
             <div>
@@ -325,8 +345,8 @@
       </nav>
     </main>
 
-    <script src="./app.js?v=95"></script>
-    <script src="./drawing.js?v=95"></script>
+    <script src="./app.js?v=96"></script>
+    <script src="./drawing.js?v=96"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first

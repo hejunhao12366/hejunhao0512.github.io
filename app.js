@@ -665,6 +665,7 @@ function renderForecast() {
 function renderForecastChart(forecast, daysLeft, badgeClass) {
   const container = $("#forecastChart");
   if (!container) return;
+  const gridC = chartGridColors();
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -721,7 +722,7 @@ function renderForecastChart(forecast, daysLeft, badgeClass) {
   for (let g = 0; g <= 3; g++) {
     const val = maxV - (maxV / 3) * g;
     const y = yFor(val);
-    svg += `<line x1="${PAD_L}" y1="${y.toFixed(1)}" x2="${W - PAD_R}" y2="${y.toFixed(1)}" stroke="rgba(0,0,0,${g === 3 ? "0.12" : "0.06"})" stroke-width="1" stroke-dasharray="2 3"/>`;
+    svg += `<line x1="${PAD_L}" y1="${y.toFixed(1)}" x2="${W - PAD_R}" y2="${y.toFixed(1)}" stroke="${g === 3 ? gridC.gridStrong : gridC.grid}" stroke-width="1" stroke-dasharray="2 3"/>`;
     svg += `<text class="trend-axis-label" x="${PAD_L - 6}" y="${(y + 3).toFixed(1)}" text-anchor="end">${money(val)}</text>`;
   }
 
@@ -755,7 +756,7 @@ function renderForecastChart(forecast, daysLeft, badgeClass) {
       svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="#007aff"/>`;
       svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2" fill="#ffffff"/>`;
     } else {
-      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#ffffff" stroke="#007aff" stroke-width="2"/>`;
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="${gridC.dotFill}" stroke="#007aff" stroke-width="2"/>`;
     }
   });
 
@@ -1179,6 +1180,7 @@ function escapeHtml(value) {
 function renderTrendChart(records) {
   const container = $("#trendChart");
   if (!container) return;
+  const gridC = chartGridColors();
 
   // records are sorted desc; we need asc for the chart
   const sorted = records.slice().sort((a, b) => a.date.localeCompare(b.date));
@@ -1279,7 +1281,7 @@ function renderTrendChart(records) {
 
   // Grid
   gridLines.forEach((g) => {
-    svg += `<line x1="${PAD_L}" y1="${g.y.toFixed(1)}" x2="${W - PAD_R}" y2="${g.y.toFixed(1)}" stroke="rgba(0,0,0,0.06)" stroke-width="1" stroke-dasharray="2 3"/>`;
+    svg += `<line x1="${PAD_L}" y1="${g.y.toFixed(1)}" x2="${W - PAD_R}" y2="${g.y.toFixed(1)}" stroke="${gridC.grid}" stroke-width="1" stroke-dasharray="2 3"/>`;
     svg += `<text class="trend-axis-label" x="${PAD_L - 6}" y="${(g.y + 3).toFixed(1)}" text-anchor="end">${g.label}</text>`;
   });
 
@@ -1300,7 +1302,7 @@ function renderTrendChart(records) {
       svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="${lineColor}"/>`;
       svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2" fill="#ffffff"/>`;
     } else {
-      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#ffffff" stroke="${lineColor}" stroke-width="2"/>`;
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="${gridC.dotFill}" stroke="${lineColor}" stroke-width="2"/>`;
     }
   });
 
@@ -1453,6 +1455,13 @@ $("#trendMonthPrev")?.addEventListener("click", () => {
 $("#trendMonthNext")?.addEventListener("click", () => {
   trendMonthOffset++;
   renderTrendChartForMonth();
+});
+
+document.querySelectorAll(".theme-opt").forEach((button) => {
+  button.addEventListener("click", () => {
+    if (themeMode === button.dataset.themeOpt) return;
+    applyTheme(button.dataset.themeOpt);
+  });
 });
 
 document.querySelectorAll(".mode-opt").forEach((button) => {
@@ -1793,7 +1802,34 @@ $("#redoButton").addEventListener("click", () => {
 var privacyMode = true;
 try { privacyMode = localStorage.getItem("mobile-ledger-privacy-v1") !== "0"; } catch (e) {}
 
+// 外观主题（浅色/深色）：只存本机 localStorage，不随云同步；index.html 头部脚本已先行套用防闪白
+var themeMode = "light";
+try { themeMode = localStorage.getItem("mobile-ledger-theme-v1") === "dark" ? "dark" : "light"; } catch (e) {}
+
+function applyTheme(mode, rerender = true) {
+  themeMode = mode === "dark" ? "dark" : "light";
+  document.documentElement.dataset.theme = themeMode;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", themeMode === "dark" ? "#000000" : "#f2f2f7");
+  try { localStorage.setItem("mobile-ledger-theme-v1", themeMode); } catch (e) {}
+  document.querySelectorAll(".theme-opt").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.themeOpt === themeMode);
+  });
+  if (rerender) renderAll();
+}
+
+// 图表配色随主题（网格线/数据点底色在深色下反转）
+function chartGridColors() {
+  const dark = document.documentElement.dataset.theme === "dark";
+  return {
+    grid: dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.06)",
+    gridStrong: dark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.12)",
+    dotFill: dark ? "#1c1c1e" : "#ffffff",
+  };
+}
+
 document.body.dataset.view = document.querySelector('.app-view.active')?.id || 'calculatorView';
+applyTheme(themeMode, false);
 renderAll();
 setInterval(renderClock, 30_000);
 

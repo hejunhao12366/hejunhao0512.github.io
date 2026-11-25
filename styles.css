@@ -564,7 +564,7 @@ h2 {
   border-radius: var(--r-xl);
   background:
     linear-gradient(135deg, rgba(0, 122, 255, 0.08), rgba(0, 122, 255, 0.02)),
-    rgba(0, 0, 0, 0.15);
+    #f5f8ff;
   border: 1px solid rgba(0, 122, 255, 0.1);
   transition: border-color 0.4s var(--ease), background 0.4s var(--ease);
 }
@@ -573,7 +573,7 @@ h2 {
   border-color: rgba(255, 59, 48, 0.2);
   background:
     linear-gradient(135deg, rgba(255, 59, 48, 0.08), rgba(255, 59, 48, 0.02)),
-    rgba(0, 0, 0, 0.15);
+    #fff6f5;
 }
 
 .daily-highlight.warning .daily-highlight-number,
@@ -2456,4 +2456,177 @@ body:not([data-view="calculatorView"]) .mode-switch { display: none; }
 .stage-date-picker .ghost-button {
   flex-shrink: 0;
   padding: 8px 12px;
+}
+
+/* ============================================================
+   外观切换（v96）：浅色 = :root 默认；iOS 深色模式 = [data-theme="dark"]
+   主题存 localStorage（mobile-ledger-theme-v1，不随云同步，按设备记）
+   ============================================================ */
+.theme-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-full);
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--line);
+}
+
+.theme-opt {
+  padding: 6px 18px;
+  min-height: 34px;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.theme-opt.active {
+  background: #ffffff;
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #000000;
+  --bg-2: #1c1c1e;
+  --card: #1c1c1e;
+  --card-hover: #1c1c1e;
+  --card-solid: #1c1c1e;
+  --card-elevated: #2c2c2e;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.18);
+  --divider: rgba(255, 255, 255, 0.07);
+  --text: #f2f2f7;
+  --text-2: #d1d1d6;
+  --muted: #8e8e93;
+  --muted-2: #636366;
+  --mint: #0a84ff;
+  --mint-soft: rgba(10, 132, 255, 0.20);
+  --mint-glow: rgba(10, 132, 255, 0.10);
+  --blue: #0a84ff;
+  --blue-soft: rgba(10, 132, 255, 0.20);
+  --purple: #bf5af2;
+  --purple-soft: rgba(191, 90, 242, 0.18);
+  --red: #ff453a;
+  --red-soft: rgba(255, 69, 58, 0.18);
+  --yellow: #ff9f0a;
+  --yellow-soft: rgba(255, 159, 10, 0.18);
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.4);
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 10px 34px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 24px rgba(10, 132, 255, 0.18);
+  --drawing-toolbar-bg: rgba(28, 28, 30, 0.92);
+  --drawing-tool-btn: rgba(255, 255, 255, 0.08);
+  --drawing-tool-btn-hover: rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .balance-card,
+[data-theme="dark"] .total-strip,
+[data-theme="dark"] .note-pill {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .ghost-button {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .daily-highlight {
+  background:
+    linear-gradient(135deg, rgba(10, 132, 255, 0.18), rgba(10, 132, 255, 0.05)),
+    #1c1c1e;
+  border-color: rgba(10, 132, 255, 0.28);
+}
+
+[data-theme="dark"] .daily-highlight.warning {
+  background:
+    linear-gradient(135deg, rgba(255, 69, 58, 0.16), rgba(255, 69, 58, 0.05)),
+    #1c1c1e;
+  border-color: rgba(255, 69, 58, 0.3);
+}
+
+[data-theme="dark"] .countdown-card {
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.20), rgba(10, 132, 255, 0.06));
+  border-color: rgba(10, 132, 255, 0.35);
+}
+
+[data-theme="dark"] .bottom-nav {
+  background: rgba(28, 28, 30, 0.88);
+  border-color: rgba(255, 255, 255, 0.09);
+}
+
+[data-theme="dark"] .drawing-toolbar {
+  background: rgba(28, 28, 30, 0.94);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .tool-group {
+  border-right-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .tool-btn {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+[data-theme="dark"] .tool-btn:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+[data-theme="dark"] .tool-btn.active {
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(10, 132, 255, 0.4);
+}
+
+[data-theme="dark"] .color-swatch {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+[data-theme="dark"] .color-dot {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+[data-theme="dark"] .fill-dot {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+[data-theme="dark"] .stroke-select {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+[data-theme="dark"] .drawing-canvas-wrap {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="dark"] .undo-redo-group {
+  background: #2c2c2e;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .mode-switch,
+[data-theme="dark"] .theme-switch {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .theme-opt.active {
+  background: #636366;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .forecast-badge.forecast-safe {
+  color: #30d158;
+  background: rgba(48, 209, 88, 0.16);
+}
+
+[data-theme="dark"] .tasks-check-item input[type="checkbox"] {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.06);
 }
