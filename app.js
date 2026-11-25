@@ -2539,6 +2539,16 @@ function bindTaskManageButtons() {
     input.focus();
   });
 
+  document.getElementById("tasksRenamePlanBtn")?.addEventListener("click", () => {
+    const plan = getPlan();
+    if (!plan) return;
+    const name = window.prompt("修改计划名称：", plan.name);
+    if (!name || !name.trim()) return;
+    plan.name = name.trim();
+    saveTaskBoard();
+    renderTasksView();
+  });
+
   document.getElementById("tasksDeletePlanBtn")?.addEventListener("click", () => {
     if (taskBoard.plans.length <= 1) {
       window.alert("至少保留一个计划");
