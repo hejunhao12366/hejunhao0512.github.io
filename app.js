@@ -661,7 +661,8 @@ function renderForecast() {
   renderForecastChart(forecast, daysLeft, badgeClass);
 }
 
-// ── 花完预警图：实线 = 最近实际余额；虚线 = 按日均花销直线推算到 0；竖虚线标发钱日/预计花完日 ──
+// ── 花完预警图（v100 美化）：平滑实际曲线 + 切线式推算虚线 + 整数刻度 + 斜率标注 ──
+// 数学感来源：实际余额画成平滑曲线，推算线像切线一样以日均斜率 k 从今天延出去直达 0
 function renderForecastChart(forecast, daysLeft, badgeClass) {
   const container = $("#forecastChart");
   if (!container) return;
@@ -698,56 +699,114 @@ function renderForecastChart(forecast, daysLeft, badgeClass) {
   const totalDays = Math.max(1, Math.round((endDate - startDate) / dayMs));
 
   const total = getTotalBalance();
-  const values = actual.map((r) => Number(r.totalBalance || 0));
-  const maxV = Math.max(...values, total) * 1.08 || 1;
-  const minV = 0;
+
+  // Y 轴整数刻度：从步长表里选能把最大值盖住、且刻度数 ≤5 的最细步长
+  const rawMax = Math.max(...actual.map((r) => Number(r.totalBalance || 0)), total);
+  const steps = [10, 20, 25, 50, 100, 150, 200, 250, 500, 1000];
+  const step = steps.find((st) => Math.ceil(rawMax / st) <= 5) || 1000;
+  const maxV = Math.ceil(rawMax / step) * step || step;
+  const ticks = [];
+  for (let v = maxV; v >= 0; v -= step) ticks.push(v);
 
   const W = 320;
-  const H = 170;
-  const PAD_L = 46;
+  const H = 176;
+  const PAD_L = 40;
   const PAD_R = 14;
-  const PAD_T = 16;
-  const PAD_B = 28;
+  const PAD_T = 18;
+  const PAD_B = 26;
   const plotW = W - PAD_L - PAD_R;
   const plotH = H - PAD_T - PAD_B;
   const xFor = (date) => PAD_L + (Math.round((date - startDate) / dayMs) / totalDays) * plotW;
-  const yFor = (v) => PAD_T + plotH - ((v - minV) / (maxV - minV)) * plotH;
+  const yFor = (v) => PAD_T + plotH - (v / maxV) * plotH;
+  const zeroY = yFor(0);
 
   const projColor = badgeClass === "forecast-danger" ? "#ff3b30" : badgeClass === "forecast-warn" ? "#ff9500" : "#34c759";
   const targetLabel = state.mode === "holiday" ? "假期结束" : "发钱日";
 
   let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<defs>
+    <linearGradient id="fcArea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${projColor}" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="${projColor}" stop-opacity="0"/>
+    </linearGradient>
+  </defs>`;
 
-  // 横向网格（4 条，含 0 线）
-  for (let g = 0; g <= 3; g++) {
-    const val = maxV - (maxV / 3) * g;
-    const y = yFor(val);
-    svg += `<line x1="${PAD_L}" y1="${y.toFixed(1)}" x2="${W - PAD_R}" y2="${y.toFixed(1)}" stroke="${g === 3 ? gridC.gridStrong : gridC.grid}" stroke-width="1" stroke-dasharray="2 3"/>`;
-    svg += `<text class="trend-axis-label" x="${PAD_L - 6}" y="${(y + 3).toFixed(1)}" text-anchor="end">${money(val)}</text>`;
+  // 网格 + 整数刻度（0 线加重）
+  ticks.forEach((v) => {
+    const y = yFor(v);
+    const isZero = v === 0;
+    svg += `<line x1="${PAD_L}" y1="${y.toFixed(1)}" x2="${W - PAD_R}" y2="${y.toFixed(1)}" stroke="${isZero ? gridC.gridStrong : gridC.grid}" stroke-width="1" ${isZero ? "" : 'stroke-dasharray="2 3"'}/>`;
+    svg += `<text class="trend-axis-label" x="${PAD_L - 6}" y="${(y + 3).toFixed(1)}" text-anchor="end">${v}</text>`;
+  });
+
+  // 发钱日竖线（紫）
+  const paydayDate = addDays(today, daysLeft);
+  const paydayX = xFor(paydayDate);
+  svg += `<line x1="${paydayX.toFixed(1)}" y1="${PAD_T}" x2="${paydayX.toFixed(1)}" y2="${zeroY.toFixed(1)}" stroke="#af52de" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.7"/>`;
+  svg += `<text x="${Math.min(Math.max(paydayX, PAD_L + 24), W - PAD_R - 24).toFixed(1)}" y="${PAD_T - 6}" text-anchor="middle" fill="#af52de" font-size="9.5" font-weight="600">${targetLabel} ${mdLabel(paydayDate)}</text>`;
+
+  // 预计花完竖线 + 标签（靠右缘时标签改放线内侧上方，避免与轴尾日期相撞）
+  const showRunout = forecast.runway <= horizonDays;
+  const runoutDate = addDays(today, Math.floor(forecast.runway));
+  let runoutX = null;
+  if (showRunout) {
+    runoutX = xFor(runoutDate);
+    svg += `<line x1="${runoutX.toFixed(1)}" y1="${PAD_T}" x2="${runoutX.toFixed(1)}" y2="${zeroY.toFixed(1)}" stroke="${projColor}" stroke-width="1.2" stroke-dasharray="2 3" opacity="0.65"/>`;
+    const nearRight = runoutX > W - PAD_R - 44;
+    const lx = nearRight ? runoutX - 4 : runoutX;
+    const anchor = nearRight ? "end" : "middle";
+    const ly = nearRight ? zeroY - 8 : zeroY + 22;
+    svg += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}" fill="${projColor}" font-size="9.5" font-weight="600">预计花完 ${mdLabel(runoutDate)}</text>`;
   }
 
-  // 发钱日竖线
-  const paydayX = xFor(addDays(today, daysLeft));
-  svg += `<line x1="${paydayX.toFixed(1)}" y1="${PAD_T}" x2="${paydayX.toFixed(1)}" y2="${(PAD_T + plotH).toFixed(1)}" stroke="#af52de" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.75"/>`;
-  svg += `<text x="${Math.min(Math.max(paydayX, PAD_L + 16), W - PAD_R - 16).toFixed(1)}" y="${PAD_T - 5}" text-anchor="middle" fill="#af52de" font-size="9.5" font-weight="600">${targetLabel} ${mdLabel(addDays(today, daysLeft))}</text>`;
-
-  // 预计花完竖线（推算会在图范围内见底时才画）
-  if (forecast.runway <= horizonDays) {
-    const runoutX = xFor(addDays(today, Math.floor(forecast.runway)));
-    svg += `<line x1="${runoutX.toFixed(1)}" y1="${PAD_T}" x2="${runoutX.toFixed(1)}" y2="${(PAD_T + plotH).toFixed(1)}" stroke="${projColor}" stroke-width="1.2" stroke-dasharray="2 3" opacity="0.8"/>`;
-    svg += `<text x="${Math.min(Math.max(runoutX, PAD_L + 20), W - PAD_R - 20).toFixed(1)}" y="${(PAD_T + plotH + 22).toFixed(1)}" text-anchor="middle" fill="${projColor}" font-size="9.5" font-weight="600">预计花完 ${mdLabel(addDays(today, Math.floor(forecast.runway)))}</text>`;
-  }
-
-  // 推算虚线：今天余额 → 按日均花销降到 0（或到图右界）
-  const projEndDays = Math.min(forecast.runway, horizonDays);
-  const projEndValue = Math.max(0, total - forecast.rate * projEndDays);
-  const p1 = { x: xFor(today), y: yFor(total) };
-  const p2 = { x: xFor(addDays(today, projEndDays)), y: yFor(projEndValue) };
-  svg += `<line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}" x2="${p2.x.toFixed(1)}" y2="${p2.y.toFixed(1)}" stroke="${projColor}" stroke-width="2.2" stroke-dasharray="6 4" stroke-linecap="round"/>`;
-
-  // 实际余额折线 + 数据点
+  // 坐标点
   const pts = actual.map((r) => ({ x: xFor(dateOf(r.date)), y: yFor(Number(r.totalBalance || 0)), value: Number(r.totalBalance || 0) }));
-  const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+  const pNow = { x: xFor(today), y: yFor(total) };
+  const projEndDays = Math.min(forecast.runway, horizonDays);
+  const pEnd = { x: xFor(addDays(today, projEndDays)), y: yFor(Math.max(0, total - forecast.rate * projEndDays)) };
+
+  // 平滑曲线（Catmull-Rom → 三次贝塞尔，与走势图同算法）
+  function smoothPath(p) {
+    if (p.length < 2) return "";
+    let d = `M ${p[0].x.toFixed(1)} ${p[0].y.toFixed(1)}`;
+    for (let i = 0; i < p.length - 1; i++) {
+      const p0 = p[i - 1] || p[i];
+      const p1 = p[i];
+      const p2 = p[i + 1];
+      const p3 = p[i + 2] || p2;
+      const t = 0.18;
+      const c1x = p1.x + (p2.x - p0.x) * t;
+      const c1y = p1.y + (p2.y - p0.y) * t;
+      const c2x = p2.x - (p3.x - p1.x) * t;
+      const c2y = p2.y - (p3.y - p1.y) * t;
+      d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+    }
+    return d;
+  }
+  const linePath = smoothPath(pts);
+
+  // 面积：实际曲线 + 推算线 一路压到 0 线，淡色填充收尾
+  const areaPath = linePath +
+    ` L ${pEnd.x.toFixed(1)} ${pEnd.y.toFixed(1)}` +
+    ` L ${pEnd.x.toFixed(1)} ${zeroY.toFixed(1)}` +
+    ` L ${pts[0].x.toFixed(1)} ${zeroY.toFixed(1)} Z`;
+  svg += `<path d="${areaPath}" fill="url(#fcArea)"/>`;
+
+  // 推算虚线（切线）
+  svg += `<line x1="${pNow.x.toFixed(1)}" y1="${pNow.y.toFixed(1)}" x2="${pEnd.x.toFixed(1)}" y2="${pEnd.y.toFixed(1)}" stroke="${projColor}" stroke-width="2.2" stroke-dasharray="6 4" stroke-linecap="round"/>`;
+  if (showRunout) {
+    svg += `<circle cx="${pEnd.x.toFixed(1)}" cy="${pEnd.y.toFixed(1)}" r="3.5" fill="${projColor}"/>`;
+  }
+
+  // 斜率标注：沿推算线中点、顺线角度旋转，像函数图像上的 k 值
+  const midX = (pNow.x + pEnd.x) / 2;
+  const midY = (pNow.y + pEnd.y) / 2;
+  const angle = Math.atan2(pEnd.y - pNow.y, pEnd.x - pNow.x) * 180 / Math.PI;
+  if (pEnd.x - pNow.x > 90) {
+    svg += `<text x="${midX.toFixed(1)}" y="${(midY - 9).toFixed(1)}" text-anchor="middle" fill="${projColor}" font-size="9.5" font-weight="600" opacity="0.9" transform="rotate(${angle.toFixed(1)} ${midX.toFixed(1)} ${(midY - 9).toFixed(1)})">k = −${money(forecast.rate)} 元/天</text>`;
+  }
+
+  // 实际平滑曲线 + 数据点
   svg += `<path d="${linePath}" fill="none" stroke="#007aff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
   pts.forEach((p, i) => {
     const isLast = i === pts.length - 1;
@@ -756,18 +815,20 @@ function renderForecastChart(forecast, daysLeft, badgeClass) {
       svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="#007aff"/>`;
       svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2" fill="#ffffff"/>`;
     } else {
-      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="${gridC.dotFill}" stroke="#007aff" stroke-width="2"/>`;
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="${gridC.dotFill}" stroke="#007aff" stroke-width="2"/>`;
     }
   });
 
-  // X 轴标签：起始日 / 今天 / 结束日
+  // X 轴标签：起始日 / 今天 / 结束日（花完标签在右缘内侧时省略结束日防撞）
   const xLabels = [
     { x: xFor(startDate), text: mdLabel(startDate) },
     { x: xFor(today), text: "今天" },
-    { x: xFor(endDate), text: mdLabel(endDate) },
   ];
+  if (!(showRunout && runoutX > W - PAD_R - 44)) {
+    xLabels.push({ x: xFor(endDate), text: mdLabel(endDate) });
+  }
   xLabels.forEach((l) => {
-    svg += `<text class="trend-axis-label" x="${Math.min(Math.max(l.x, PAD_L), W - PAD_R).toFixed(1)}" y="${H - 14}" text-anchor="middle">${l.text}</text>`;
+    svg += `<text class="trend-axis-label" x="${Math.min(Math.max(l.x, PAD_L), W - PAD_R).toFixed(1)}" y="${H - 12}" text-anchor="middle">${l.text}</text>`;
   });
 
   svg += `</svg>`;
