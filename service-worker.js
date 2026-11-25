@@ -1,12 +1,12 @@
-const cacheName = "mobile-ledger-v101";
+const cacheName = "mobile-ledger-v102";
 const assets = [
   "./",
   "./index.html",
-  "./styles.css?v=101",
-  "./app.js?v=101",
-  "./drawing.js?v=101",
+  "./styles.css?v=102",
+  "./app.js?v=102",
+  "./drawing.js?v=102",
   "./manifest.webmanifest",
-  "./icon-v101.svg",
+  "./icon-v102.svg",
 ];
 
 self.addEventListener("install", (event) => {
