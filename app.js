@@ -624,6 +624,8 @@ function renderForecast() {
   const forecast = getSpendForecast();
   if (!forecast.ok) {
     body.innerHTML = `<p class="forecast-text">记录还不够预测：已有 ${forecast.count || 0} 天记录。每天晚上填完余额点「保存今日记录」，攒够 3 天以上、并且余额有下降，就能算出照现在的花法钱能撑到哪天。</p>`;
+    const chartEl = $("#forecastChart");
+    if (chartEl) chartEl.innerHTML = "";
     return;
   }
 
@@ -656,6 +658,120 @@ function renderForecast() {
     <span class="badge forecast-badge ${badgeClass}">${badgeText}</span>
     <p class="forecast-text">${detail}</p>
   `;
+  renderForecastChart(forecast, daysLeft, badgeClass);
+}
+
+// ── 花完预警图：实线 = 最近实际余额；虚线 = 按日均花销直线推算到 0；竖虚线标发钱日/预计花完日 ──
+function renderForecastChart(forecast, daysLeft, badgeClass) {
+  const container = $("#forecastChart");
+  if (!container) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = getLocalDateStr(today);
+  const dayMs = 86400000;
+  const dateOf = (str) => new Date(str + "T00:00:00");
+  const addDays = (base, n) => {
+    const d = new Date(base);
+    d.setDate(d.getDate() + n);
+    return d;
+  };
+  const mdLabel = (d) => `${d.getMonth() + 1}/${d.getDate()}`;
+
+  // 实际段：最近 8 天窗口内的记录（与 getSpendForecast 同一窗口口径）
+  const cutoffStr = getLocalDateStr(addDays(today, -8));
+  const actual = (state.dailyRecords || [])
+    .filter((r) => r.date > cutoffStr && r.date <= todayStr)
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (actual.length < 2) {
+    container.innerHTML = "";
+    return;
+  }
+
+  // 时间轴：从第一条实际记录到 max(发钱日, 预计花完日)，推算跨度封顶 45 天防图拉爆
+  const startDate = dateOf(actual[0].date);
+  const runwayDays = Math.min(45, Math.ceil(forecast.runway));
+  const horizonDays = Math.max(daysLeft, runwayDays, 1);
+  const endDate = addDays(today, horizonDays);
+  const totalDays = Math.max(1, Math.round((endDate - startDate) / dayMs));
+
+  const total = getTotalBalance();
+  const values = actual.map((r) => Number(r.totalBalance || 0));
+  const maxV = Math.max(...values, total) * 1.08 || 1;
+  const minV = 0;
+
+  const W = 320;
+  const H = 170;
+  const PAD_L = 46;
+  const PAD_R = 14;
+  const PAD_T = 16;
+  const PAD_B = 28;
+  const plotW = W - PAD_L - PAD_R;
+  const plotH = H - PAD_T - PAD_B;
+  const xFor = (date) => PAD_L + (Math.round((date - startDate) / dayMs) / totalDays) * plotW;
+  const yFor = (v) => PAD_T + plotH - ((v - minV) / (maxV - minV)) * plotH;
+
+  const projColor = badgeClass === "forecast-danger" ? "#f87171" : badgeClass === "forecast-warn" ? "#fbbf24" : "#5eead4";
+  const targetLabel = state.mode === "holiday" ? "假期结束" : "发钱日";
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+
+  // 横向网格（4 条，含 0 线）
+  for (let g = 0; g <= 3; g++) {
+    const val = maxV - (maxV / 3) * g;
+    const y = yFor(val);
+    svg += `<line x1="${PAD_L}" y1="${y.toFixed(1)}" x2="${W - PAD_R}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,${g === 3 ? "0.14" : "0.05"})" stroke-width="1" stroke-dasharray="2 3"/>`;
+    svg += `<text class="trend-axis-label" x="${PAD_L - 6}" y="${(y + 3).toFixed(1)}" text-anchor="end">${money(val)}</text>`;
+  }
+
+  // 发钱日竖线
+  const paydayX = xFor(addDays(today, daysLeft));
+  svg += `<line x1="${paydayX.toFixed(1)}" y1="${PAD_T}" x2="${paydayX.toFixed(1)}" y2="${(PAD_T + plotH).toFixed(1)}" stroke="#c084fc" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.75"/>`;
+  svg += `<text x="${Math.min(Math.max(paydayX, PAD_L + 16), W - PAD_R - 16).toFixed(1)}" y="${PAD_T - 5}" text-anchor="middle" fill="#c084fc" font-size="9.5" font-weight="600">${targetLabel} ${mdLabel(addDays(today, daysLeft))}</text>`;
+
+  // 预计花完竖线（推算会在图范围内见底时才画）
+  if (forecast.runway <= horizonDays) {
+    const runoutX = xFor(addDays(today, Math.floor(forecast.runway)));
+    svg += `<line x1="${runoutX.toFixed(1)}" y1="${PAD_T}" x2="${runoutX.toFixed(1)}" y2="${(PAD_T + plotH).toFixed(1)}" stroke="${projColor}" stroke-width="1.2" stroke-dasharray="2 3" opacity="0.8"/>`;
+    svg += `<text x="${Math.min(Math.max(runoutX, PAD_L + 20), W - PAD_R - 20).toFixed(1)}" y="${(PAD_T + plotH + 22).toFixed(1)}" text-anchor="middle" fill="${projColor}" font-size="9.5" font-weight="600">预计花完 ${mdLabel(addDays(today, Math.floor(forecast.runway)))}</text>`;
+  }
+
+  // 推算虚线：今天余额 → 按日均花销降到 0（或到图右界）
+  const projEndDays = Math.min(forecast.runway, horizonDays);
+  const projEndValue = Math.max(0, total - forecast.rate * projEndDays);
+  const p1 = { x: xFor(today), y: yFor(total) };
+  const p2 = { x: xFor(addDays(today, projEndDays)), y: yFor(projEndValue) };
+  svg += `<line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}" x2="${p2.x.toFixed(1)}" y2="${p2.y.toFixed(1)}" stroke="${projColor}" stroke-width="2.2" stroke-dasharray="6 4" stroke-linecap="round"/>`;
+
+  // 实际余额折线 + 数据点
+  const pts = actual.map((r) => ({ x: xFor(dateOf(r.date)), y: yFor(Number(r.totalBalance || 0)), value: Number(r.totalBalance || 0) }));
+  const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+  svg += `<path d="${linePath}" fill="none" stroke="#5eead4" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  pts.forEach((p, i) => {
+    const isLast = i === pts.length - 1;
+    if (isLast) {
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="7" fill="#5eead4" opacity="0.2"/>`;
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="#5eead4"/>`;
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2" fill="#08090f"/>`;
+    } else {
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#0e1119" stroke="#5eead4" stroke-width="2"/>`;
+    }
+  });
+
+  // X 轴标签：起始日 / 今天 / 结束日
+  const xLabels = [
+    { x: xFor(startDate), text: mdLabel(startDate) },
+    { x: xFor(today), text: "今天" },
+    { x: xFor(endDate), text: mdLabel(endDate) },
+  ];
+  xLabels.forEach((l) => {
+    svg += `<text class="trend-axis-label" x="${Math.min(Math.max(l.x, PAD_L), W - PAD_R).toFixed(1)}" y="${H - 14}" text-anchor="middle">${l.text}</text>`;
+  });
+
+  svg += `</svg>`;
+  svg += `<div class="forecast-legend"><span class="fl-actual">━ 实际余额</span><span class="fl-proj">┄ 按日均 ${fmtMoney(forecast.rate)} 推算</span></div>`;
+  container.innerHTML = svg;
 }
 
 // ── 存钱目标卡：一个目标，金额点选行内编辑（与余额卡同一套机制），名称走 prompt ──

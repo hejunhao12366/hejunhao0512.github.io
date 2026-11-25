@@ -977,6 +977,18 @@ h2 {
   background: var(--red-soft);
 }
 
+.forecast-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.forecast-legend .fl-actual {
+  color: var(--mint);
+}
+
 /* ── Savings goal （存钱目标卡） ── */
 .savings-head {
   display: flex;
