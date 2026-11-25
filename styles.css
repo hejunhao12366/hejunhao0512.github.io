@@ -954,6 +954,67 @@ h2 {
   cursor: text;
 }
 
+/* ── Forecast （花完预警） ── */
+.forecast-text {
+  margin-top: 10px;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.forecast-badge.forecast-safe {
+  color: var(--mint);
+  background: var(--mint-soft);
+}
+
+.forecast-badge.forecast-warn {
+  color: var(--yellow);
+  background: var(--yellow-soft);
+}
+
+.forecast-badge.forecast-danger {
+  color: var(--red);
+  background: var(--red-soft);
+}
+
+/* ── Savings goal （存钱目标卡） ── */
+.savings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.savings-name {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+  padding: 4px 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.savings-del {
+  border: 0;
+  background: transparent;
+  color: var(--muted-2);
+  font-size: 15px;
+  padding: 4px 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.savings-amounts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  color: var(--text-2);
+  font-size: 14px;
+}
+
 /* ── Editable values ── */
 .editable-value {
   cursor: text;

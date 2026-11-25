@@ -16,6 +16,7 @@ const sampleState = {
   installmentMonths: 3,
   installmentNote: "",
   customSplits: [],
+  savingsGoal: null,
   balances: {
     alipay: 321.86,
     wechat: 263.64,
@@ -136,6 +137,16 @@ function legacyDebtMirrors(items) {
   };
 }
 
+function normalizeSavingsGoal(raw) {
+  // 对象才保留（null/缺失 = 没定目标）；金额归一化，不因 target=0 丢目标，避免误编辑丢数据
+  if (!raw || typeof raw !== "object") return null;
+  return {
+    name: String(raw.name || "存钱目标"),
+    target: Math.max(0, Number(raw.target || 0)),
+    saved: Math.max(0, Number(raw.saved || 0)),
+  };
+}
+
 function normalizeState(nextState) {
   const debtItems = normalizeDebtItems(nextState);
   return {
@@ -152,6 +163,7 @@ function normalizeState(nextState) {
       amount: Number(s.amount || 0),
       months: Math.max(1, Number(s.months || 1)),
     })) : [],
+    savingsGoal: normalizeSavingsGoal(nextState.savingsGoal),
     balances: {
       alipay: Number(nextState.balances?.alipay || 0),
       wechat: Number(nextState.balances?.wechat || 0),
@@ -215,6 +227,8 @@ function renderDashboard() {
   renderDebt();
   renderMonth();
   renderDaily();
+  renderForecast();
+  renderSavings();
 }
 
 function getRepayProgress(id) {
@@ -560,6 +574,163 @@ function renderDaily() {
     countdownCard.classList.toggle("holiday", isHoliday);
     countdownCard.classList.toggle("urgent", days <= 3);
   }
+}
+
+// ── 花完预警：用每日记录快照估算日均花销（只统计余额下降的区间，发钱/收入日不算花销）──
+function getSpendForecast() {
+  const records = (state.dailyRecords || [])
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (records.length < 3) return { ok: false, count: records.length };
+
+  // 只看完整落在最近 8 天内的区间：跨界区间（起点在窗口外）整段剔除，
+  // 否则一段十几天的余额落差会被算进近期日均，预测失真
+  const cutoff = new Date();
+  cutoff.setHours(0, 0, 0, 0);
+  cutoff.setDate(cutoff.getDate() - 8);
+  const cutoffStr = getLocalDateStr(cutoff);
+
+  let spend = 0;
+  let spendDays = 0;
+  for (let i = 1; i < records.length; i++) {
+    const prev = records[i - 1];
+    const curr = records[i];
+    if (prev.date <= cutoffStr) continue;
+    const days = Math.round(
+      (new Date(curr.date + "T00:00:00") - new Date(prev.date + "T00:00:00")) / 86400000
+    );
+    if (days <= 0) continue;
+    const drop = Number(prev.totalBalance || 0) - Number(curr.totalBalance || 0);
+    if (drop > 0) {
+      spend += drop;
+      spendDays += days;
+    }
+  }
+  if (spendDays < 2 || spend <= 0) return { ok: false, count: records.length };
+
+  const rate = spend / spendDays;
+  const total = getTotalBalance();
+  const runway = total > 0 ? total / rate : 0;
+  return { ok: true, rate, runway };
+}
+
+function formatMonthDay(date) {
+  return `${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+function renderForecast() {
+  const body = $("#forecastBody");
+  if (!body) return;
+  const forecast = getSpendForecast();
+  if (!forecast.ok) {
+    body.innerHTML = `<p class="forecast-text">记录还不够预测：已有 ${forecast.count || 0} 天记录。每天晚上填完余额点「保存今日记录」，攒够 3 天以上、并且余额有下降，就能算出照现在的花法钱能撑到哪天。</p>`;
+    return;
+  }
+
+  const daysLeft = getDivisorDays();
+  const total = getTotalBalance();
+  const dailyBudget = daysLeft > 0 ? total / daysLeft : total;
+  const targetDate = new Date();
+  targetDate.setHours(0, 0, 0, 0);
+  targetDate.setDate(targetDate.getDate() + daysLeft);
+  const runoutDate = new Date();
+  runoutDate.setHours(0, 0, 0, 0);
+  runoutDate.setDate(runoutDate.getDate() + Math.floor(forecast.runway));
+  const targetLabel = state.mode === "holiday" ? "假期结束" : "发生活费";
+  const runwayText = forecast.runway >= 99 ? "99+" : Math.floor(forecast.runway);
+
+  let badgeClass = "forecast-safe";
+  let badgeText = "✓ 能撑到";
+  let detail = `近几天日均花 ${fmtMoney(forecast.rate)}，照这个速度还能花 ${runwayText} 天（到 ${formatMonthDay(runoutDate)}），${targetLabel}是 ${formatMonthDay(targetDate)}，有富余，放心花。`;
+  if (forecast.runway < daysLeft) {
+    badgeClass = "forecast-danger";
+    badgeText = "⚠ 会提前花完";
+    detail = `近几天日均花 ${fmtMoney(forecast.rate)}，照这个速度只能撑 ${runwayText} 天，预计 ${formatMonthDay(runoutDate)} 就花完了，比${targetLabel}（${formatMonthDay(targetDate)}）早 ${Math.ceil(daysLeft - forecast.runway)} 天。从今天起每天最多花 ${fmtMoney(dailyBudget)}，日均要降 ${fmtMoney(forecast.rate - dailyBudget)} 才能撑到。`;
+  } else if (forecast.runway < daysLeft + 2) {
+    badgeClass = "forecast-warn";
+    badgeText = "⚠ 刚好够";
+    detail = `近几天日均花 ${fmtMoney(forecast.rate)}，照这个速度能撑 ${runwayText} 天（到 ${formatMonthDay(runoutDate)}），和${targetLabel}（${formatMonthDay(targetDate)}）几乎贴着，别再加额外开销就没事。`;
+  }
+
+  body.innerHTML = `
+    <span class="badge forecast-badge ${badgeClass}">${badgeText}</span>
+    <p class="forecast-text">${detail}</p>
+  `;
+}
+
+// ── 存钱目标卡：一个目标，金额点选行内编辑（与余额卡同一套机制），名称走 prompt ──
+function renderSavings() {
+  const body = $("#savingsBody");
+  if (!body) return;
+  const goal = state.savingsGoal;
+  if (!goal) {
+    body.innerHTML = `
+      <p class="forecast-text">还没定目标。比如想攒钱买个平板，定个目标，每天晚上填余额时顺手把攒下的数更新一下就行。</p>
+      <button class="repay-plan-btn" type="button" onclick="createSavingsGoal()">＋ 定个存钱目标</button>
+    `;
+    return;
+  }
+
+  const target = Number(goal.target || 0);
+  const saved = Number(goal.saved || 0);
+  const percent = target > 0 ? Math.min(100, Math.round((saved / target) * 100)) : 0;
+  const left = Math.max(0, target - saved);
+
+  body.innerHTML = `
+    <div class="savings-head">
+      <button class="savings-name" type="button" onclick="renameSavingsGoal()" title="点击改名">${escapeHtml(goal.name)}</button>
+      <button class="savings-del" type="button" onclick="removeSavingsGoal()" title="删除目标">✕</button>
+    </div>
+    <div class="savings-amounts">
+      <span>已存 <span class="tag mint editable-value" data-path="savingsGoal.saved">${fmtMoney(saved)}</span></span>
+      <span>目标 <span class="tag purple editable-value" data-path="savingsGoal.target">${fmtMoney(target)}</span></span>
+      <span>还差 <span class="tag ${left > 0 ? "yellow" : "mint"}">${fmtMoney(left)}</span></span>
+    </div>
+    <div class="repay-progress">
+      <div class="repay-progress-label">
+        <span>进度</span>
+        <span>${percent}%</span>
+      </div>
+      <div class="repay-progress-bar">
+        <div class="repay-progress-fill" style="width: ${percent}%"></div>
+      </div>
+    </div>
+    <div class="note-pill">${left > 0 ? "点金额就能改 · 已存和目标都行" : "🎉 目标达成，钱攒够了！"}</div>
+  `;
+}
+
+function createSavingsGoal() {
+  const name = (prompt("存钱目标名称（如：买平板）：") || "").trim();
+  if (!name) return;
+  const targetStr = prompt("目标金额：", "0");
+  if (targetStr === null) return;
+  const target = Number(targetStr);
+  if (isNaN(target) || target <= 0) { alert("金额无效"); return; }
+  rememberState();
+  state.savingsGoal = { name, target, saved: 0 };
+  saveState();
+  renderAll();
+}
+
+function renameSavingsGoal() {
+  const goal = state.savingsGoal;
+  if (!goal) return;
+  const name = (prompt("新的名称：", goal.name) || "").trim();
+  if (!name || name === goal.name) return;
+  rememberState();
+  goal.name = name;
+  saveState();
+  renderAll();
+}
+
+function removeSavingsGoal() {
+  const goal = state.savingsGoal;
+  if (!goal) return;
+  if (!confirm(`删除存钱目标「${goal.name}」？`)) return;
+  rememberState();
+  state.savingsGoal = null;
+  saveState();
+  renderAll();
 }
 
 function getDivisorDays() {

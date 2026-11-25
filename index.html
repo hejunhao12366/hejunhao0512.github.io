@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=92" />
+    <link rel="stylesheet" href="./styles.css?v=93" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
@@ -75,6 +75,12 @@
           <button id="saveDailyRecordButton" class="primary wide record-save-button" type="button">保存今日记录</button>
         </section>
 
+        <section class="forecast-panel app-card" aria-labelledby="forecastTitle">
+          <div class="section-kicker">花完预警</div>
+          <h2 id="forecastTitle">照这个速度花</h2>
+          <div id="forecastBody"></div>
+        </section>
+
         <section class="summary-section app-card hero-card" aria-labelledby="debtTitle">
           <div class="section-kicker">欠款总览</div>
           <div class="debt-title-row">
@@ -122,6 +128,12 @@
           <div id="customSplitsContainer"></div>
           <button class="add-split-btn" type="button" onclick="addCustomSplit()">+ 添加自定义分期</button>
           <div class="note-pill" id="installmentNote"></div>
+        </section>
+
+        <section class="savings-panel app-card" aria-labelledby="savingsTitle">
+          <div class="section-kicker">存钱目标</div>
+          <h2 id="savingsTitle">存钱目标</h2>
+          <div id="savingsBody"></div>
         </section>
 
       </div>
@@ -312,8 +324,8 @@
       </nav>
     </main>
 
-    <script src="./app.js?v=92"></script>
-    <script src="./drawing.js?v=92"></script>
+    <script src="./app.js?v=93"></script>
+    <script src="./drawing.js?v=93"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first
