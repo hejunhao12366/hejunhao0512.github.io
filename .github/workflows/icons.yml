@@ -1,0 +1,38 @@
+name: Build PNG icons
+
+on:
+  push:
+    paths:
+      - "icon-fullbleed.svg"
+      - "tools/make_icons.py"
+      - ".github/workflows/icons.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  icons:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install converter
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq libcairo2 > /dev/null
+          pip install -q cairosvg
+      - name: Render PNGs
+        run: python tools/make_icons.py
+      - name: Commit PNGs if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apple-touch-icon.png icon-192.png icon-512.png
+          if git diff --cached --quiet; then
+            echo "icons unchanged"
+          else
+            git commit -m "chore: rebuild PNG icons from icon-fullbleed.svg"
+            git push
+          fi
