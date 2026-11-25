@@ -23,7 +23,7 @@ class DrawingApp {
 
     // ── 工具 ──
     this.currentTool = 'pen'; // pen, rectangle, circle, line, arrow, text, select
-    this.strokeColor = '#0d9488';
+    this.strokeColor = '#007aff';
     this.fillColor = 'transparent';
     this.strokeWidth = 2;
 
@@ -634,7 +634,7 @@ class DrawingApp {
 
   drawElement(el) {
     const opts = {
-      stroke: el.strokeColor || '#0d9488',
+      stroke: el.strokeColor || '#007aff',
       strokeWidth: el.strokeWidth || 2,
       roughness: 1.2,
       bowing: 1,
@@ -687,7 +687,7 @@ class DrawingApp {
 
     if (el.type === 'text') {
       this.ctx.font = `${el.fontSize || 20}px "KaiTi","STKaiti",serif`;
-      this.ctx.fillStyle = el.color || '#0d9488';
+      this.ctx.fillStyle = el.color || '#007aff';
       this.ctx.fillText(el.text, el.x, el.y);
       return;
     }
@@ -696,7 +696,7 @@ class DrawingApp {
   drawSelection(el) {
     const bb = this._bbox(el);
     const pad = 6 / this.scale;
-    this.ctx.strokeStyle = '#0d9488';
+    this.ctx.strokeStyle = '#007aff';
     this.ctx.lineWidth = 1.5 / this.scale;
     this.ctx.setLineDash([6 / this.scale, 4 / this.scale]);
     this.ctx.strokeRect(bb.x - pad, bb.y - pad, bb.w + pad * 2, bb.h + pad * 2);
@@ -705,7 +705,7 @@ class DrawingApp {
     // 四角手柄（更大，方便触摸）
     const handles = this._handleWorldPos(bb);
     const hs = 7 / this.scale;
-    this.ctx.fillStyle = '#0d9488';
+    this.ctx.fillStyle = '#007aff';
     this.ctx.strokeStyle = '#ffffff';
     this.ctx.lineWidth = 1.5 / this.scale;
     Object.values(handles).forEach((pos) => {

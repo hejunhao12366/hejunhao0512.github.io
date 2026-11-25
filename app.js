@@ -712,7 +712,7 @@ function renderForecastChart(forecast, daysLeft, badgeClass) {
   const xFor = (date) => PAD_L + (Math.round((date - startDate) / dayMs) / totalDays) * plotW;
   const yFor = (v) => PAD_T + plotH - ((v - minV) / (maxV - minV)) * plotH;
 
-  const projColor = badgeClass === "forecast-danger" ? "#f87171" : badgeClass === "forecast-warn" ? "#fbbf24" : "#5eead4";
+  const projColor = badgeClass === "forecast-danger" ? "#ff3b30" : badgeClass === "forecast-warn" ? "#ff9500" : "#34c759";
   const targetLabel = state.mode === "holiday" ? "假期结束" : "发钱日";
 
   let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
@@ -721,14 +721,14 @@ function renderForecastChart(forecast, daysLeft, badgeClass) {
   for (let g = 0; g <= 3; g++) {
     const val = maxV - (maxV / 3) * g;
     const y = yFor(val);
-    svg += `<line x1="${PAD_L}" y1="${y.toFixed(1)}" x2="${W - PAD_R}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,${g === 3 ? "0.14" : "0.05"})" stroke-width="1" stroke-dasharray="2 3"/>`;
+    svg += `<line x1="${PAD_L}" y1="${y.toFixed(1)}" x2="${W - PAD_R}" y2="${y.toFixed(1)}" stroke="rgba(0,0,0,${g === 3 ? "0.12" : "0.06"})" stroke-width="1" stroke-dasharray="2 3"/>`;
     svg += `<text class="trend-axis-label" x="${PAD_L - 6}" y="${(y + 3).toFixed(1)}" text-anchor="end">${money(val)}</text>`;
   }
 
   // 发钱日竖线
   const paydayX = xFor(addDays(today, daysLeft));
-  svg += `<line x1="${paydayX.toFixed(1)}" y1="${PAD_T}" x2="${paydayX.toFixed(1)}" y2="${(PAD_T + plotH).toFixed(1)}" stroke="#c084fc" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.75"/>`;
-  svg += `<text x="${Math.min(Math.max(paydayX, PAD_L + 16), W - PAD_R - 16).toFixed(1)}" y="${PAD_T - 5}" text-anchor="middle" fill="#c084fc" font-size="9.5" font-weight="600">${targetLabel} ${mdLabel(addDays(today, daysLeft))}</text>`;
+  svg += `<line x1="${paydayX.toFixed(1)}" y1="${PAD_T}" x2="${paydayX.toFixed(1)}" y2="${(PAD_T + plotH).toFixed(1)}" stroke="#af52de" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.75"/>`;
+  svg += `<text x="${Math.min(Math.max(paydayX, PAD_L + 16), W - PAD_R - 16).toFixed(1)}" y="${PAD_T - 5}" text-anchor="middle" fill="#af52de" font-size="9.5" font-weight="600">${targetLabel} ${mdLabel(addDays(today, daysLeft))}</text>`;
 
   // 预计花完竖线（推算会在图范围内见底时才画）
   if (forecast.runway <= horizonDays) {
@@ -747,15 +747,15 @@ function renderForecastChart(forecast, daysLeft, badgeClass) {
   // 实际余额折线 + 数据点
   const pts = actual.map((r) => ({ x: xFor(dateOf(r.date)), y: yFor(Number(r.totalBalance || 0)), value: Number(r.totalBalance || 0) }));
   const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
-  svg += `<path d="${linePath}" fill="none" stroke="#5eead4" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  svg += `<path d="${linePath}" fill="none" stroke="#007aff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
   pts.forEach((p, i) => {
     const isLast = i === pts.length - 1;
     if (isLast) {
-      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="7" fill="#5eead4" opacity="0.2"/>`;
-      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="#5eead4"/>`;
-      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2" fill="#08090f"/>`;
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="7" fill="#007aff" opacity="0.2"/>`;
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="#007aff"/>`;
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2" fill="#ffffff"/>`;
     } else {
-      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#0e1119" stroke="#5eead4" stroke-width="2"/>`;
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#ffffff" stroke="#007aff" stroke-width="2"/>`;
     }
   });
 
@@ -1261,8 +1261,8 @@ function renderTrendChart(records) {
 
   // Determine color based on trend (up=mint, down=red, flat=mint)
   const trend = points[n - 1].value - points[0].value;
-  const lineColor = trend < -0.01 ? "#f87171" : "#5eead4";
-  const glowColor = trend < -0.01 ? "rgba(248,113,113,0.35)" : "rgba(94,234,212,0.35)";
+  const lineColor = trend < -0.01 ? "#ff3b30" : "#34c759";
+  const glowColor = trend < -0.01 ? "rgba(255,59,48,0.30)" : "rgba(52,199,89,0.30)";
 
   let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
   svg += `<defs>
@@ -1279,7 +1279,7 @@ function renderTrendChart(records) {
 
   // Grid
   gridLines.forEach((g) => {
-    svg += `<line x1="${PAD_L}" y1="${g.y.toFixed(1)}" x2="${W - PAD_R}" y2="${g.y.toFixed(1)}" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="2 3"/>`;
+    svg += `<line x1="${PAD_L}" y1="${g.y.toFixed(1)}" x2="${W - PAD_R}" y2="${g.y.toFixed(1)}" stroke="rgba(0,0,0,0.06)" stroke-width="1" stroke-dasharray="2 3"/>`;
     svg += `<text class="trend-axis-label" x="${PAD_L - 6}" y="${(g.y + 3).toFixed(1)}" text-anchor="end">${g.label}</text>`;
   });
 
@@ -1298,9 +1298,9 @@ function renderTrendChart(records) {
     if (isLast) {
       svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="7" fill="${lineColor}" opacity="0.2"/>`;
       svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="${lineColor}"/>`;
-      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2" fill="#08090f"/>`;
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2" fill="#ffffff"/>`;
     } else {
-      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#0e1119" stroke="${lineColor}" stroke-width="2"/>`;
+      svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#ffffff" stroke="${lineColor}" stroke-width="2"/>`;
     }
   });
 
@@ -1868,9 +1868,9 @@ const DEFAULT_LINKS = [
 ];
 
 const LINK_COLORS = [
-  "#5eead4", "#818cf8", "#f472b6", "#fbbf24", "#34d399",
-  "#60a5fa", "#fb923c", "#a78bfa", "#f87171", "#2dd4bf",
-  "#e879f9", "#4ade80",
+  "#007aff", "#5ac8fa", "#ff6482", "#ff9500", "#34c759",
+  "#007aff", "#ff9500", "#af52de", "#ff3b30", "#5ac8fa",
+  "#af52de", "#34c759",
 ];
 
 let navLinks = [];
@@ -1910,7 +1910,7 @@ function renderLinksGrid() {
 
     const icon = document.createElement("div");
     icon.className = "link-icon";
-    icon.style.background = LINK_COLORS[link.color % LINK_COLORS.length] || "#5eead4";
+    icon.style.background = LINK_COLORS[link.color % LINK_COLORS.length] || "#007aff";
     const glyph = (link.emoji && link.emoji.trim()) || (link.name || "?").slice(0, 1);
     icon.textContent = glyph;
 
