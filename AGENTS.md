@@ -26,7 +26,7 @@
 
 | 文件 | 职责 |
 |------|------|
-| `index.html` | 主页面结构，4 个底部导航 tab（计算/记录/绘图/设置） |
+| `index.html` | 主页面结构，5 个底部导航 tab（计算/记录/任务/导航/设置） |
 | `styles.css` | 全部样式。**零 @media 断点**（iOS Safari pinch-zoom 会触发布局偏移） |
 | `app.js` | 记账核心逻辑：模式切换、余额计算、记录管理、走势图、倒计时、Gist 同步 |
 | `drawing.js` | 绘图模块 v2：Canvas + roughjs，世界坐标、缩放平移、命中检测、撤销重做 |
@@ -44,9 +44,9 @@
 
 ## 当前版本
 
-- **PWA 缓存**：`v92`
-- **HTML asset 版本**：`?v=92`（styles.css / app.js / drawing.js）
-- **最新 commit**：`2b21ba4` — 导航图标支持长按拖动排序（v92）
+- **PWA 缓存**：`v93`
+- **HTML asset 版本**：`?v=93`（styles.css / app.js / drawing.js）
+- **最新 commit**：`4ddafd6` — 花完预警 + 存钱目标卡（v93）
 
 ## ⚠️ 修改规则（每次改动必须遵守）
 
@@ -150,6 +150,7 @@ pen（画笔）、rectangle、circle、line（直线）、arrow、text、select�
 
 | 日期 | Commit | 内容 |
 |------|--------|------|
+| 2026-11-25 | `4ddafd6` | **花完预警 + 存钱目标卡（v93）**：用户明确拒绝逐笔「记一笔」（工作流是晚上回宿舍看各账户余额直接填总数），两个新功能都只吃现有每日记录快照、零新增输入。①花完预警（计算页新卡 `#forecastBody`）：`getSpendForecast()` 只统计完整落在最近 8 天内、且余额下降的记录区间（发钱/收入日余额上升不算花销；跨界长区间整段剔除，否则十几天落差会污染日均——逻辑测试 case5 踩过此坑），日均花销 = 下降总额 ÷ 下降天数；还能撑天数 = 总余额 ÷ 日均。与 `getDivisorDays()` 目标日比较三档：≥目标+2 安全（薄荷绿）/ ≥目标 刚好（黄）/ <目标 危险（红，给出预计花完日期、早几天、每天最多花多少、日均要降多少）。记录 <3 条或下降天数 <2 时显示攒记录提示。②存钱目标卡（计算页新卡 `#savingsBody`）：`state.savingsGoal` 单目标 `{name,target,saved}`，`normalizeSavingsGoal()` 归一化（对象才保留，target=0 不丢目标防误编辑丢数据；旧存档/云端无此字段自动为 null 不影响迁移）；已存/目标金额复用全局 `.editable-value` 行内编辑（path=`savingsGoal.saved/target`），名称/新建/删除走 prompt/confirm（同欠款项模式，名称 `escapeHtml`）；进度条复用 `.repay-progress` 类。静态验证 20/20 + 预警算法逻辑测试 5/5（稳态花销/收入日/记录不足/隔日记录/窗口外旧记录）；线上确认 SW 已切 v93、线上 app.js 含新函数、首页含两新卡容器。顺手修正本文件文件结构表过时的「4 个底部导航」描述 |
 | 2026-11-25 | `2b21ba4` | **导航图标长按拖动排序（v92）**：①触摸长按 500ms 进入拖动（图标放大浮起 `.dragging`），移动时 `elementFromPoint` 实时重排 DOM，松手按 DOM 顺序重建 `navLinks` 并 `saveNavLinks()` 持久化；长按不移动直接松手仍打开编辑弹窗（原长按行为改到松手时触发）②桌面鼠标按住拖动（>6px）同样排序，拖后紧随的 click 由 `longFired`/`openedAt` 守卫吞掉③「+」添加按钮不参与排序，悬停其上 = 移到末尾；`touchcancel` 取消拖动并重渲染恢复④每项挂 `_linkRef` 回收链接对象，提交后 `renderLinksGrid()` 重绑下标。静态验证 16/16（语法+关键断言+零 @media）；线上确认 SW 已切 v92 |
 | 2026-10-27 | `9f5653b` | **每天记录保存精确时间（v91）**：①「保存今日记录」新增 `time` 字段（本地 HH:MM:SS），记录卡片日期行显示 `10月27日 23:49:18 在校`（`.record-time` 小号灰字 tabular-nums），旧记录无 time 不显示②顺手修同类根因 bug：`toISOString()` 是 UTC——中国时区凌晨 0~8 点保存会记成前一天、月底保存可能归错月。统一改 `getLocalDateStr()` 本地日期，涉及 4 处：记录保存日期、记录月份分组默认展开判断、切假期模式的 `holidayStartDate`、`holidayEndDate`（+holidayDays 天，此前会偏早一天）。无头实测 11/11：时间格式/同日去重更新时间/刷新持久化/旧记录兼容/走势图正常；v90 欠款回归 12/12 |
 | 2026-10-26 | `858cf30` | **总欠支持自定义欠款项（v90）**：数据模型改 `debtItems[]`（id/name/color/total/monthlyDue/plan），不再固定白条+花呗。①总欠卡片公式行带名称标签（`白条 2382.52 + 花呗 590.76 = ...`），金额仍可点选行内编辑（path=`debtItems.N.total`）②公式下方管理条：每项一个胶囊（点名称改名、✕删除带确认），末尾「＋添加欠款」（prompt 输入名称+金额），配色盘 red/blue/mint/purple/yellow 循环③还款计划弹窗动态渲染每项的 12 个月视图④旧 `debts`/`monthlyRepay`/`repayPlan` 自动迁移到 debtItems（id 固定 baitiao/huabei 保计划数据），且每次 saveState 刷新旧字段镜像——未升级的旧设备拉云存档不会清零白条/花呗⑤公式行 `formula-main` 改 `flex-wrap:wrap`（名称+金额 `.formula-group` 成组不拆散），多项时自动换行不再横向截断总和⑥修复：全新安装走 `clone(sampleState)` 不过 normalizeState 导致镜像缺失。无头实测 23/23：添加/改名/删除/撤销/刷新持久化/行内改数/弹窗3分区/进度累计/v89旧格式迁移全过；4项长名称 DOM 实测 0 重叠 0 溢出 |
