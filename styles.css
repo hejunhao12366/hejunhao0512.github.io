@@ -2267,8 +2267,7 @@ body[data-mode="holiday"] .school-only { display: none; }
 }
 .tasks-check-tip { font-size: 12px; color: var(--muted-2); line-height: 1.5; }
 
-/* 在校/假期切换：仅在计算页显示（body[data-view] 由 switchView 维护） */
-body:not([data-view="calculatorView"]) .mode-switch { display: none; }
+/* 在校/假期切换：v97 起移入设置页「模式」卡，常驻显示（原顶栏位置换给外观切换） */
 
 /* 任务添加/管理按钮 */
 .tasks-add-btn {

@@ -19,15 +19,15 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="stylesheet" href="./styles.css?v=96" />
+    <link rel="stylesheet" href="./styles.css?v=97" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
       <header class="topbar">
         <div>
-          <div class="mode-switch" id="modeSwitch">
-            <button class="mode-opt active" type="button" data-mode="school">在校</button>
-            <button class="mode-opt" type="button" data-mode="holiday">假期</button>
+          <div class="theme-switch" id="themeSwitch">
+            <button class="theme-opt" type="button" data-theme-opt="light">浅色</button>
+            <button class="theme-opt" type="button" data-theme-opt="dark">深色</button>
           </div>
           <time id="nowText" class="time-text"></time>
         </div>
@@ -273,13 +273,13 @@
 
         <section class="app-card settings-card">
           <div class="section-header">
-            <h2>外观</h2>
-            <div class="theme-switch" id="themeSwitch">
-              <button class="theme-opt" type="button" data-theme-opt="light">浅色</button>
-              <button class="theme-opt" type="button" data-theme-opt="dark">深色</button>
+            <h2>模式</h2>
+            <div class="mode-switch" id="modeSwitch">
+              <button class="mode-opt active" type="button" data-mode="school">在校</button>
+              <button class="mode-opt" type="button" data-mode="holiday">假期</button>
             </div>
           </div>
-          <p class="sync-help" style="margin-top:10px;">白天用浅色、晚上用深色，随时切。这个设置只记在这台设备上，不跟云同步走。</p>
+          <p class="sync-help" style="margin-top:10px;">在校按每月发生活费日算每天可用，假期按假期结束日期算。放假、开学时来这里切一次就行；外观（浅色/深色）在首页顶部切。</p>
         </section>
 
         <section class="app-card settings-card sync-card">
@@ -345,8 +345,8 @@
       </nav>
     </main>
 
-    <script src="./app.js?v=96"></script>
-    <script src="./drawing.js?v=96"></script>
+    <script src="./app.js?v=97"></script>
+    <script src="./drawing.js?v=97"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first
