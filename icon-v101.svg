@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5ac8fa"/>
+      <stop offset="1" stop-color="#007aff"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <!-- 推算切线：从「今天」这个点以斜率 k 虚线延出（先画，压在点下） -->
+  <path d="M 296 296 L 434 442" fill="none" stroke="#ffffff" stroke-width="17" stroke-linecap="round" stroke-dasharray="27 19" opacity="0.85"/>
+  <!-- 实际余额：白色平滑曲线（与花完预警图同语言） -->
+  <path d="M 78 128 C 160 128, 190 226, 244 268 C 262 282, 280 290, 296 296" fill="none" stroke="#ffffff" stroke-width="34" stroke-linecap="round"/>
+  <!-- 今天这个点 -->
+  <circle cx="296" cy="296" r="27" fill="#ffffff"/>
+  <circle cx="296" cy="296" r="12" fill="#007aff"/>
+</svg>
