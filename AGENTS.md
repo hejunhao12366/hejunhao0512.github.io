@@ -44,9 +44,9 @@
 
 ## 当前版本
 
-- **PWA 缓存**：`v103`
-- **HTML asset 版本**：`?v=103`（styles.css / app.js / drawing.js）
-- **最新 commit**：`e764b47` — 图标引用改 PNG（v103，PNG 待 CI 生成）
+- **PWA 缓存**：`v104`
+- **HTML asset 版本**：`?v=104`（styles.css / app.js / drawing.js）
+- **最新 commit**：`dd8a335` — 任务/导航纳入云同步（v104）
 
 ## ⚠️ 修改规则（每次改动必须遵守）
 
@@ -150,7 +150,8 @@ pen（画笔）、rectangle、circle、line（直线）、arrow、text、select�
 
 | 日期 | Commit | 内容 |
 |------|--------|------|
-| 2026-11-25 | `e764b47` | **图标改 PNG 修复 iOS 不显示（v103，进行中）**：用户删快捷方式重加后图标变成灰色「理」字占位——iOS 的 apple-touch-icon 不认 SVG（且早年的深色图标能显示疑为 manifest/旧 PNG 时期残留）。改法：index 的 apple-touch-icon 换 `apple-touch-icon.png`（180）、manifest 加 icon-192/512.png（SVG 保留兜底）；PNG 必须全出血无透明（源图 `icon-fullbleed.svg` = 定版图 rx 改 0）。**两道工具墙**：①连接器 push-files 只收 UTF-8 文本，二进制 PNG 推不了；②改用 GitHub Actions 云端生成（`tools/make_icons.py` + workflow），但连接器的 GitHub App 没有 workflows 权限，任何含 `.github/workflows/*` 的推送都 403（push-files 与 create_or_update_file 均实测）。workflow 文件已备在本地 `.github/workflows/icons.yml`，**待用户在 GitHub 网页端手动新建该文件一次**，Actions 即自动生成并提交三张 PNG；PNG 未落地前线上图标引用暂时 404（不影响 App 功能）。SW 预缓存不含 PNG（避免 addAll 因 404 整包安装失败） |
+| 2026-11-26 | `dd8a335` | **任务/导航纳入云同步（v104）**：用户为换图标删主屏快捷方式重加后，任务阶段与网址导航被重置成默认——根因是这两块只存本机 localStorage（links-v1 / tasks-v2 两个独立 key），从不进 Gist 同步；iOS 重加 = 新存储容器，本机清零、只有 state 从云端回来。已核 Gist 原始数据确认从无这两块字段，本次丢失的数据无云端副本可恢复。修法：`exportCloudState` 打包时附 `linksData`/`tasksData`，`applyCloudState(cloudState, rawCloud)` 从原始 JSON 应用附加数据（normalizeState 是白名单会丢弃未知字段，故必须走 raw）；新旧比较改整包时间戳 `bundleUpdatedAt()` = max(state 时间， extras 时间），extras 时间存 `mobile-ledger-extras-meta-v1`，`saveNavLinks`/`saveTaskBoard` 保存时 `touchExtras()` 记时并排队上传（参数 `{sync:false}` 供云端应用与 v86 迁移内部调用，防回声上传）；防覆盖闸 `extrasHydrated`：未与云端对账前上传不带附加数据，避免重装后的默认值抢先覆盖云端真数据。验证 19/19（含全新设备恢复、旧包不清空、防回声三场景）；线上确认 SW v104 |
+| 2026-11-25 | `e764b47` | **图标改 PNG 修复 iOS 不显示（v103，进行中）**：用户删快捷方式重加后图标变成灰色「理」字占位——iOS 的 apple-touch-icon 不认 SVG（且早年的深色图标能显示疑为 manifest/旧 PNG 时期残留）。改法：index 的 apple-touch-icon 换 `apple-touch-icon.png`（180）、manifest 加 icon-192/512.png（SVG 保留兜底）；PNG 必须全出血无透明（源图 `icon-fullbleed.svg` = 定版图 rx 改 0）。**两道工具墙**：①连接器 push-files 只收 UTF-8 文本，二进制 PNG 推不了；②改用 GitHub Actions 云端生成（`tools/make_icons.py` + workflow），但连接器的 GitHub App 没有 workflows 权限，任何含 `.github/workflows/*` 的推送都 403（push-files 与 create_or_update_file 均实测）。workflow 文件已备在本地 `.github/workflows/icons.yml`；**后续（2026-11-25 晚）已解决**：用户当时没电脑，改由 Muse 云浏览器登其 GitHub 网页版（密码走保险库卡片、设备验证走 QQ 邮箱验证码）由用户本人提交该文件（commit d2dbbaa），Actions 随即生成并提交三张 PNG，2026-11-26 用户确认主屏图标已正常显示。SW 预缓存不含 PNG（避免 addAll 因 404 整包安装失败） |
 | 2026-11-25 | `23afacd` | **定版图标（v102）**：v101 的曲线切线图标用户评价「好丑」，要求用他原来的图标（深色底+内卡片：箭头条/蓝紫条/青条/黄点/角落色块）改色选版。流程：先出 A–E 五张全新设计被否 → 按原图标 1:1 复刻造型出 4 版改色（原味深蓝/苹果蓝/浅色极简/纯黑深色），他选「苹果蓝」方向 → 沿该方向再出 6 张变体 → 最终选定 **1 号原版2**：iOS 蓝渐变底（#5ac8fa→#007aff）+ 白色卡片 + 蓝箭头 + 蓝紫渐变条 + 青绿条 + 黄点。新文件 `icon-v102.svg`（再次换名绕 iOS 缓存），三处引用同步；v101 的 icon-v101.svg 留仓库不用。线上确认 SW v102、图标 200 |
 | 2026-11-25 | `b3c5560` | **新 App 图标（v101）**：用户要求图标与现主题匹配（旧图标是深色旧款，与苹果风脱节；且 v95 只改了 icon.svg 内容，iOS 主屏图标不刷新）。新图标 `icon-v101.svg`：iOS 蓝渐变（#5ac8fa→#007aff，与导航圆钮同款）+ 白色平滑曲线→圆环「今天」点→虚线切线，和 v100 预警图同一套视觉语言。**换新文件名**接入（index 的 apple-touch-icon、manifest icons、SW 预缓存三处同步改指 icon-v101.svg，旧 icon.svg 留仓库不用）——iOS 对同名图标缓存极顽固，换名才有机会刷新；若主屏仍不变，需删掉主屏快捷方式重新添加（数据在 Safari 网站数据+云同步里，不受影响）。推送后 Pages 部署延迟约 1 分钟（期间 SW 仍 v100、图标 404），复查确认 v101 与图标 200 |
 | 2026-11-25 | `d44fb58` | **花完预警图重画（v100）**：用户嫌图丑「没有数学美感」（截图实证：实际线被 38 天推算跨度挤成左上角一小团、Y 轴刻度是 311.44/207.63 这类小数、预计花完标签与轴尾日期相撞）。`renderForecastChart` 整体重画：①实际余额改 Catmull-Rom 平滑曲线（与走势图同算法）；②Y 轴整数刻度——步长表 [10,20,25,50,100,150,200,250,500,1000] 选 ≤5 格的最细步长、最大值向上取整（如 311→400/300/200/100/0）；③推算虚线定位为「切线」：沿线中点顺角度旋转标注 `k = −7.17 元/天`（推算段宽 >90px 才标）；④实际+推算轮廓下加同色淡渐变面积、见底点加实心终点；⑤标签避让：预计花完靠右缘时标签改 end 锚点放 0 线上方内侧，并省略 X 轴结束日标签。数据口径不变（8 天窗口/45 天封顶照旧）。验证 19/19（含其真实场景 311/7.17/38 天与危险场景双测）；线上确认 SW 已切 v100 |
