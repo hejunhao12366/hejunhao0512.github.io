@@ -1995,7 +1995,10 @@ function togglePrivacy() {
   const scripts = Array.from(document.querySelectorAll("script[src*='?v=']"));
   if (scripts.length) {
     const m = scripts[0].src.match(/[?&]v=(\d+)/);
-    if (m) v = "v" + m[1];
+    if (m) {
+      const n = Number(m[1]);
+      v = "V" + Math.floor(n / 100) + "." + String(n % 100).padStart(2, "0");
+    }
   }
   const host = location.hostname;
   const isLocal = host === "localhost" || host === "127.0.0.1" || /^192\.168\./.test(host);
@@ -2481,6 +2484,25 @@ function renderStageList() {
   });
 }
 
+// 阶段状态：已完成只看勾选；「未开始/进行中」不能只看勾选数——当前阶段只要
+// 日期已到（或没设日期）就算已开始，哪怕一个任务都没勾（2026-11-26 用户报障：
+// 阶段已过 12 天仍显示未开始）。非当前阶段且没勾过任务的，才是未开始。
+function getStageStatus(stage, isCurrent) {
+  const total = stage.items.length;
+  const done = stage.items.filter((t) => t.done).length;
+  if (total > 0 && done === total) return { text: "✓ 已完成", cls: " done" };
+  let started = done > 0;
+  if (!started && isCurrent) {
+    if (!stage.targetDate) {
+      started = true;
+    } else {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      started = new Date(stage.targetDate + "T00:00:00") <= today;
+    }
+  }
+  return started ? { text: "进行中", cls: " ongoing" } : { text: "未开始", cls: "" };
+}
+
 // ── 主渲染 ──
 function renderTasksView() {
   renderPlanList();
@@ -2510,8 +2532,9 @@ function renderTasksView() {
     stageDateTip.textContent = "";
   }
   const statusEl = document.getElementById("tasksStageStatus");
-  statusEl.textContent = pct === 100 ? "✓ 已完成" : done > 0 ? "进行中" : "未开始";
-  statusEl.className = "tasks-status" + (pct === 100 ? " done" : done > 0 ? " ongoing" : "");
+  const stageStatus = getStageStatus(stage, true);
+  statusEl.textContent = stageStatus.text;
+  statusEl.className = "tasks-status" + stageStatus.cls;
 
   const checklist = document.getElementById("tasksChecklist");
   checklist.innerHTML = "";
