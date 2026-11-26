@@ -44,9 +44,9 @@
 
 ## 当前版本
 
-- **PWA 缓存**：`v105`
-- **HTML asset 版本**：`?v=105`（styles.css / app.js / drawing.js）
-- **最新 commit**：`abb48f7` — 阶段状态修复 + 版本号显示改 V1.05 格式（V1.05）
+- **PWA 缓存**：`v106`
+- **HTML asset 版本**：`?v=106`（styles.css / app.js / drawing.js）
+- **最新 commit**：`771d232` — 网址导航可获取网站真实图标（V1.06）
 - **版本号显示规范（2026-11-26 用户指定）**：内部计数仍是整数（105），对用户显示一律写成 `V主.次` —— 主 = 百位、次 = 后两位补零，如 104 → V1.04、105 → V1.05；设置页版本 tag 已按此格式输出，后续 changelog 与对用户汇报也用此格式。
 
 ## ⚠️ 修改规则（每次改动必须遵守）
@@ -151,6 +151,7 @@ pen（画笔）、rectangle、circle、line（直线）、arrow、text、select�
 
 | 日期 | Commit | 内容 |
 |------|--------|------|
+| 2026-11-26 | `771d232` | **网址导航获取网站图标（V1.06）**：用户要求导航图标能抓取所链接网站的真实图标、抓不到要提示失败。实现：link 新增可选 `icon` 字段（随 v104 的 linksData 整表克隆自动进云同步，无需改同步代码）；编辑弹窗加「网站图标」行（预览 + 获取按钮 + 清除按钮 + 状态提示行）。获取走 `fetchSiteIcon()` 按候选顺序用 Image 探测：DDG ip3 → 站点根 /favicon.ico → Google s2 sz=128（s2 对无图标站点返回 16px 通用地球图，故 min 尺寸 17 才算抓到；前两者加载失败即 error），单个 6s 超时，全败返回 null 并在弹窗提示「获取失败…已保留原来的表情/首字」。渲染时有 icon 用 `<img class=link-icon-img>`，加载 error 自动回退表情/首字。验证 18/18（候选生成含中文域名 punycode、非法 URL 等）；线上确认 SW v106 |
 | 2026-11-26 | `abb48f7` | **阶段状态修复 + 版本号显示新格式（V1.05）**：用户报障任务阶段状态恒显「未开始」（其实况：英语2 阶段2「大三上中期」日期 2026-11-14、已过 12 天、0/2 勾选）。根因：状态文案只按勾选数算（全勾=已完成、有勾=进行中、零勾=未开始），完全不看阶段日期与当前阶段。修法：抽纯函数 `getStageStatus(stage, isCurrent)` —— 全勾 → ✓已完成；有勾 → 进行中；当前阶段且（无日期或日期 ≤ 今天）→ 进行中；其余 → 未开始。另按用户要求版本号显示改 `V主.次` 格式（`showVersion` 把 ?v=105 输出为 V1.05；内部 SW 缓存名与 ?v= 仍用整数）。验证 18/18（决策表 10 场景含用户实况 + 格式 3 例）；线上确认 SW v105 |
 | 2026-11-26 | `dd8a335` | **任务/导航纳入云同步（v104）**：用户为换图标删主屏快捷方式重加后，任务阶段与网址导航被重置成默认——根因是这两块只存本机 localStorage（links-v1 / tasks-v2 两个独立 key），从不进 Gist 同步；iOS 重加 = 新存储容器，本机清零、只有 state 从云端回来。已核 Gist 原始数据确认从无这两块字段，本次丢失的数据无云端副本可恢复。修法：`exportCloudState` 打包时附 `linksData`/`tasksData`，`applyCloudState(cloudState, rawCloud)` 从原始 JSON 应用附加数据（normalizeState 是白名单会丢弃未知字段，故必须走 raw）；新旧比较改整包时间戳 `bundleUpdatedAt()` = max(state 时间， extras 时间），extras 时间存 `mobile-ledger-extras-meta-v1`，`saveNavLinks`/`saveTaskBoard` 保存时 `touchExtras()` 记时并排队上传（参数 `{sync:false}` 供云端应用与 v86 迁移内部调用，防回声上传）；防覆盖闸 `extrasHydrated`：未与云端对账前上传不带附加数据，避免重装后的默认值抢先覆盖云端真数据。验证 19/19（含全新设备恢复、旧包不清空、防回声三场景）；线上确认 SW v104 |
 | 2026-11-25 | `e764b47` | **图标改 PNG 修复 iOS 不显示（v103，进行中）**：用户删快捷方式重加后图标变成灰色「理」字占位——iOS 的 apple-touch-icon 不认 SVG（且早年的深色图标能显示疑为 manifest/旧 PNG 时期残留）。改法：index 的 apple-touch-icon 换 `apple-touch-icon.png`（180）、manifest 加 icon-192/512.png（SVG 保留兜底）；PNG 必须全出血无透明（源图 `icon-fullbleed.svg` = 定版图 rx 改 0）。**两道工具墙**：①连接器 push-files 只收 UTF-8 文本，二进制 PNG 推不了；②改用 GitHub Actions 云端生成（`tools/make_icons.py` + workflow），但连接器的 GitHub App 没有 workflows 权限，任何含 `.github/workflows/*` 的推送都 403（push-files 与 create_or_update_file 均实测）。workflow 文件已备在本地 `.github/workflows/icons.yml`；**后续（2026-11-25 晚）已解决**：用户当时没电脑，改由 Muse 云浏览器登其 GitHub 网页版（密码走保险库卡片、设备验证走 QQ 邮箱验证码）由用户本人提交该文件（commit d2dbbaa），Actions 随即生成并提交三张 PNG，2026-11-26 用户确认主屏图标已正常显示。SW 预缓存不含 PNG（避免 addAll 因 404 整包安装失败） |
