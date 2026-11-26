@@ -20,7 +20,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <link rel="icon" type="image/svg+xml" href="./icon-v102.svg" />
-    <link rel="stylesheet" href="./styles.css?v=105" />
+    <link rel="stylesheet" href="./styles.css?v=106" />
   </head>
   <body data-mode="school">
     <main class="app-shell">
@@ -207,6 +207,13 @@
             <input id="linkNameInput" type="text" placeholder="例如：哔哩哔哩" />
             <label class="link-label" for="linkUrlInput">网址</label>
             <input id="linkUrlInput" type="url" placeholder="https://…" />
+            <label class="link-label">网站图标</label>
+            <div class="link-icon-fetch-row">
+              <div class="link-icon-preview" id="linkIconPreview">?</div>
+              <button id="linkFetchIconBtn" class="ghost-button" type="button">获取网站图标</button>
+              <button id="linkClearIconBtn" class="ghost-button hidden" type="button">清除</button>
+            </div>
+            <p class="link-icon-hint" id="linkIconHint">填好网址后点「获取网站图标」，自动抓取该网站的真实图标；抓不到会提示失败，继续用表情/首字。</p>
             <label class="link-label" for="linkEmojiInput">图标表情</label>
             <input id="linkEmojiInput" type="text" placeholder="例如：📺（可留空用首字）" maxlength="4" />
             <div class="link-color-row" id="linkColorRow"></div>
@@ -347,8 +354,8 @@
       </nav>
     </main>
 
-    <script src="./app.js?v=105"></script>
-    <script src="./drawing.js?v=105"></script>
+    <script src="./app.js?v=106"></script>
+    <script src="./drawing.js?v=106"></script>
     <script>
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         // Unregister any old service workers first

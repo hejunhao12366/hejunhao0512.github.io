@@ -2072,7 +2072,16 @@ function renderLinksGrid() {
     icon.className = "link-icon";
     icon.style.background = LINK_COLORS[link.color % LINK_COLORS.length] || "#007aff";
     const glyph = (link.emoji && link.emoji.trim()) || (link.name || "?").slice(0, 1);
-    icon.textContent = glyph;
+    if (link.icon) {
+      const img = document.createElement("img");
+      img.className = "link-icon-img";
+      img.src = link.icon;
+      img.alt = "";
+      img.addEventListener("error", () => { img.remove(); icon.textContent = glyph; });
+      icon.appendChild(img);
+    } else {
+      icon.textContent = glyph;
+    }
 
 
     const label = document.createElement("span");
@@ -2225,6 +2234,81 @@ function renderLinksGrid() {
   grid.appendChild(addItem);
 }
 
+
+// ── 网站图标获取：按候选顺序用 <img> 探测，第一个能加载且尺寸达标的即采用 ──
+// Google s2 对无图标站点会返回 16px 通用地球图，故要求 >16px 才算抓到；
+// DDG ip3 与站点根目录 favicon.ico 加载失败会直接 error。
+function siteIconCandidates(pageUrl) {
+  let host = "";
+  try { host = new URL(pageUrl).hostname; } catch (e) { return []; }
+  if (!host) return [];
+  return [
+    { url: `https://icons.duckduckgo.com/ip3/${host}.ico`, min: 1 },
+    { url: `https://${host}/favicon.ico`, min: 1 },
+    { url: `https://www.google.com/s2/favicons?domain=${host}&sz=128`, min: 17 },
+  ];
+}
+
+function probeIcon(candidate) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const timer = setTimeout(() => { img.src = ""; resolve(false); }, 6000);
+    img.onload = () => { clearTimeout(timer); resolve(Math.max(img.naturalWidth || 0, img.naturalHeight || 0) >= candidate.min); };
+    img.onerror = () => { clearTimeout(timer); resolve(false); };
+    img.src = candidate.url;
+  });
+}
+
+async function fetchSiteIcon(pageUrl) {
+  const candidates = siteIconCandidates(pageUrl);
+  for (const c of candidates) {
+    if (await probeIcon(c)) return c.url;
+  }
+  return null;
+}
+
+// 编辑弹窗里待保存的网站图标（"" = 用表情/首字）
+let linkModalIconUrl = "";
+
+function updateLinkIconPreview() {
+  const preview = document.getElementById("linkIconPreview");
+  const clearBtn = document.getElementById("linkClearIconBtn");
+  if (!preview) return;
+  const emoji = (document.getElementById("linkEmojiInput")?.value || "").trim();
+  const name = (document.getElementById("linkNameInput")?.value || "").trim();
+  preview.innerHTML = "";
+  if (linkModalIconUrl) {
+    const img = document.createElement("img");
+    img.src = linkModalIconUrl;
+    img.alt = "";
+    img.addEventListener("error", () => { preview.textContent = emoji || (name || "?").slice(0, 1); });
+    preview.appendChild(img);
+  } else {
+    preview.textContent = emoji || (name || "?").slice(0, 1);
+  }
+  clearBtn?.classList.toggle("hidden", !linkModalIconUrl);
+}
+
+async function onFetchLinkIcon() {
+  const urlInput = document.getElementById("linkUrlInput");
+  const hint = document.getElementById("linkIconHint");
+  const btn = document.getElementById("linkFetchIconBtn");
+  let url = (urlInput?.value || "").trim();
+  if (!url) { if (hint) hint.textContent = "先填网址，再点获取。"; return; }
+  if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+  if (btn) btn.disabled = true;
+  if (hint) hint.textContent = "正在获取网站图标…";
+  const found = await fetchSiteIcon(url);
+  if (btn) btn.disabled = false;
+  if (found) {
+    linkModalIconUrl = found;
+    updateLinkIconPreview();
+    if (hint) hint.textContent = "✓ 已获取网站图标，保存后生效。";
+  } else if (hint) {
+    hint.textContent = "获取失败：这个网站没有可用的图标，已保留原来的表情/首字。";
+  }
+}
+
 function openLinkModal(index) {
   editingLinkIndex = index;
   const overlay = document.getElementById("linkModalOverlay");
@@ -2235,19 +2319,24 @@ function openLinkModal(index) {
   const emojiInput = document.getElementById("linkEmojiInput");
   if (!overlay) return;
 
+  const hint = document.getElementById("linkIconHint");
+  if (hint) hint.textContent = "填好网址后点「获取网站图标」，自动抓取该网站的真实图标；抓不到会提示失败，继续用表情/首字。";
   if (index >= 0 && navLinks[index]) {
     title.textContent = "编辑网址";
     nameInput.value = navLinks[index].name || "";
     urlInput.value = navLinks[index].url || "";
     emojiInput.value = navLinks[index].emoji || "";
+    linkModalIconUrl = navLinks[index].icon || "";
     delBtn.classList.remove("hidden");
   } else {
     title.textContent = "添加网址";
     nameInput.value = "";
     urlInput.value = "";
     emojiInput.value = "";
+    linkModalIconUrl = "";
     delBtn.classList.add("hidden");
   }
+  updateLinkIconPreview();
   renderLinkColorRow(index >= 0 ? navLinks[index].color : 0);
   overlay.classList.remove("hidden");
 }
@@ -2291,6 +2380,7 @@ function saveLinkModal() {
   const color = parseInt(colorRow?.dataset?.selected || "0", 10) || 0;
   const emoji = (emojiInput.value || "").trim();
   const link = { name: name || url, url, emoji, color };
+  if (linkModalIconUrl) link.icon = linkModalIconUrl;
 
   if (editingLinkIndex >= 0 && navLinks[editingLinkIndex]) {
     navLinks[editingLinkIndex] = link;
@@ -2318,6 +2408,15 @@ function deleteLinkModal() {
   const overlay = document.getElementById("linkModalOverlay");
   saveBtn?.addEventListener("click", saveLinkModal);
   delBtn?.addEventListener("click", deleteLinkModal);
+  document.getElementById("linkFetchIconBtn")?.addEventListener("click", onFetchLinkIcon);
+  document.getElementById("linkClearIconBtn")?.addEventListener("click", () => {
+    linkModalIconUrl = "";
+    updateLinkIconPreview();
+    const hint = document.getElementById("linkIconHint");
+    if (hint) hint.textContent = "已清除网站图标，保存后恢复用表情/首字。";
+  });
+  document.getElementById("linkEmojiInput")?.addEventListener("input", updateLinkIconPreview);
+  document.getElementById("linkNameInput")?.addEventListener("input", updateLinkIconPreview);
   overlay?.addEventListener("click", (e) => {
     if (e.target === overlay) closeLinkModal();
   });
