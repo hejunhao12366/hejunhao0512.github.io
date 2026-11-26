@@ -2236,15 +2236,19 @@ function renderLinksGrid() {
 
 
 // ── 网站图标获取：按候选顺序用 <img> 探测，第一个能加载且尺寸达标的即采用 ──
-// Google s2 对无图标站点会返回 16px 通用地球图，故要求 >16px 才算抓到；
-// DDG ip3 与站点根目录 favicon.ico 加载失败会直接 error。
+// 准确性优先，候选顺序 = 可信度顺序：站点自己的 apple-touch-icon → 站点自己的
+// favicon.ico → Google s2。两个教训（2026-11-26 用户报障小草AI抓到灰色假图）：
+// ① DDG ip3 对无图标站点返回 404 + 一张 48×48 灰色占位图，<img> 照样 onload，
+//    且它不带 CORS 头、读不到状态码，占位图与真图无法区分 → 已移除 DDG 源；
+// ② Google s2 对无图标站点返回 16px 通用地球图，故要求 >16px 才算抓到。
+// 站点根目录的 HTML 兜底页（SPA 假 200）解码不成图片会自然 error，不会误收。
 function siteIconCandidates(pageUrl) {
   let host = "";
   try { host = new URL(pageUrl).hostname; } catch (e) { return []; }
   if (!host) return [];
   return [
-    { url: `https://icons.duckduckgo.com/ip3/${host}.ico`, min: 1 },
-    { url: `https://${host}/favicon.ico`, min: 1 },
+    { url: `https://${host}/apple-touch-icon.png`, min: 16 },
+    { url: `https://${host}/favicon.ico`, min: 16 },
     { url: `https://www.google.com/s2/favicons?domain=${host}&sz=128`, min: 17 },
   ];
 }
