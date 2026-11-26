@@ -1618,13 +1618,64 @@ function setSyncStatus(message, connected = Boolean(state.sync.gistId)) {
   status.classList.toggle("connected", connected);
 }
 
+// ── 附加数据云同步（v104）──
+// 网址导航与任务工作台原本只存本机 localStorage、不进 Gist 同步：iOS 删除主屏
+// 快捷方式再重加 = 新存储容器，本机数据清零、只剩云端 state 回来，两块就被打回
+// 默认值（2026-11-26 用户实测中招）。现把两块数据随 state 一起打包进 Gist。
+const EXTRAS_META_KEY = "mobile-ledger-extras-meta-v1";
+let extrasUpdatedAt = 0;
+try { extrasUpdatedAt = Number(JSON.parse(localStorage.getItem(EXTRAS_META_KEY) || "{}").updatedAt || 0); } catch (e) {}
+// 本机附加数据是否已与云端对过账：未对账前上传不带附加数据，防止新装/重装后的
+// 默认值抢先覆盖云端真数据；拉取成功（applyCloudState）或本机真的编辑过才置真。
+let extrasHydrated = false;
+
+function bundleUpdatedAt() {
+  // state 与附加数据共用一个「整包时间戳」做新旧比较，任一侧编辑都算整包更新
+  return Math.max(Number(state.sync?.updatedAt || 0), extrasUpdatedAt);
+}
+
+function touchExtras() {
+  if (applyingCloudState) return;
+  extrasUpdatedAt = Date.now();
+  try { localStorage.setItem(EXTRAS_META_KEY, JSON.stringify({ updatedAt: extrasUpdatedAt })); } catch (e) {}
+  queueCloudUpload();
+}
+
+function applyCloudExtras(raw) {
+  if (!raw) return;
+  let changed = false;
+  try {
+    if (Array.isArray(raw.linksData)) {
+      navLinks = raw.linksData.map((l) => ({ ...l }));
+      saveNavLinks({ sync: false });
+      changed = true;
+    }
+    if (raw.tasksData && Array.isArray(raw.tasksData.plans)) {
+      taskBoard = JSON.parse(JSON.stringify(raw.tasksData));
+      saveTaskBoard({ sync: false });
+      changed = true;
+    }
+  } catch (e) {}
+  if (changed) {
+    try { renderLinksGrid(); } catch (e) {}
+    try { renderTasksView(); } catch (e) {}
+  }
+}
+
 function exportCloudState() {
   const nextState = clone(state);
   nextState.sync.token = "";
+  try {
+    if (extrasHydrated || extrasUpdatedAt > 0) {
+      nextState.linksData = clone(navLinks);
+      nextState.tasksData = clone(taskBoard);
+      if (extrasUpdatedAt > (nextState.sync.updatedAt || 0)) nextState.sync.updatedAt = extrasUpdatedAt;
+    }
+  } catch (e) {}
   return nextState;
 }
 
-function applyCloudState(cloudState) {
+function applyCloudState(cloudState, rawCloud) {
   const localSync = clone(state.sync);
   const nextState = normalizeState(cloudState);
   nextState.sync.token = localSync.token;
@@ -1633,6 +1684,12 @@ function applyCloudState(cloudState) {
   applyingCloudState = true;
   state = nextState;
   localStorage.setItem(storeKey, JSON.stringify(state));
+  try { applyCloudExtras(rawCloud); } catch (e) {}
+  if (rawCloud && (Array.isArray(rawCloud.linksData) || rawCloud.tasksData)) {
+    extrasUpdatedAt = Math.max(extrasUpdatedAt, Number(rawCloud.sync?.updatedAt || 0));
+    try { localStorage.setItem(EXTRAS_META_KEY, JSON.stringify({ updatedAt: extrasUpdatedAt })); } catch (e) {}
+  }
+  extrasHydrated = true;
   applyingCloudState = false;
   renderAll();
 }
@@ -1687,12 +1744,13 @@ async function pushCloudState() {
       const gist = await checkResp.json();
       const file = gist.files?.["licai-data.json"];
       if (file?.content) {
-        const cloudState = normalizeState(JSON.parse(file.content));
+        const rawCloud = JSON.parse(file.content);
+        const cloudState = normalizeState(rawCloud);
         const cloudUpdatedAt = Number(cloudState.sync?.updatedAt || 0);
         // 云端数据比本地新 → 拒绝推送，改为拉取
-        if (cloudUpdatedAt > state.sync.updatedAt) {
+        if (cloudUpdatedAt > bundleUpdatedAt()) {
           setSyncStatus("云端有更新，正在拉取...");
-          applyCloudState(cloudState);
+          applyCloudState(cloudState, rawCloud);
           setSyncStatus(`已拉取云端 ${formatSyncTime(cloudUpdatedAt)}`);
           return;
         }
@@ -1730,24 +1788,25 @@ async function pullCloudState({ force = false } = {}) {
     const gist = await response.json();
     const file = gist.files?.["licai-data.json"];
     if (!file?.content) throw new Error("云端无数据");
-    const cloudState = normalizeState(JSON.parse(file.content));
+    const rawCloud = JSON.parse(file.content);
+    const cloudState = normalizeState(rawCloud);
     const cloudUpdatedAt = Number(cloudState.sync?.updatedAt || 0);
 
     if (force) {
       // 手动拉取：仍然保护——如果云端比本地旧，提示但不覆盖
-      if (cloudUpdatedAt < state.sync.updatedAt) {
-        setSyncStatus(`云端较旧，未覆盖（本地 ${formatSyncTime(state.sync.updatedAt)}）`);
+      if (cloudUpdatedAt < bundleUpdatedAt()) {
+        setSyncStatus(`云端较旧，未覆盖（本地 ${formatSyncTime(bundleUpdatedAt())}）`);
         return;
       }
     } else {
       // 自动同步：云端必须严格更新才拉取
-      if (cloudUpdatedAt <= state.sync.updatedAt) {
-        setSyncStatus(`已是最新 ${formatSyncTime(state.sync.updatedAt)}`);
+      if (cloudUpdatedAt <= bundleUpdatedAt()) {
+        setSyncStatus(`已是最新 ${formatSyncTime(bundleUpdatedAt())}`);
         return;
       }
     }
     rememberState();
-    applyCloudState(cloudState);
+    applyCloudState(cloudState, rawCloud);
     setSyncStatus(`已同步 ${formatSyncTime(state.sync.updatedAt)}`);
   } catch (error) {
     setSyncStatus(error.message, false);
@@ -1986,14 +2045,15 @@ function loadNavLinks() {
     if (localStorage.getItem("mobile-ledger-links-migrate-v86") !== "1") {
       const before = navLinks.length;
       navLinks = navLinks.filter((l) => !l.alipay);
-      if (navLinks.length !== before) saveNavLinks();
+      if (navLinks.length !== before) saveNavLinks({ sync: false });
       localStorage.setItem("mobile-ledger-links-migrate-v86", "1");
     }
   } catch (e) {}
 }
 
-function saveNavLinks() {
+function saveNavLinks({ sync = true } = {}) {
   try { localStorage.setItem(LINKS_STORAGE_KEY, JSON.stringify(navLinks)); } catch (e) {}
+  if (sync) touchExtras();
 }
 
 function renderLinksGrid() {
@@ -2337,8 +2397,9 @@ function loadTaskBoard() {
   }
 }
 
-function saveTaskBoard() {
+function saveTaskBoard({ sync = true } = {}) {
   try { localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(taskBoard)); } catch (e) {}
+  if (sync) touchExtras();
 }
 
 function getPlan() {
