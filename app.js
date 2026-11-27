@@ -1837,15 +1837,51 @@ document.addEventListener("click", (event) => {
   startInlineEdit(target);
 });
 
+// 金额表达式求值：余额/欠款框里可直接输「51.49+30」这类算式，失焦时算出结果。
+// 支持 + − × ÷（含全角符号与全角数字）、先乘除后加减、开头负号、末尾多打的运算符忽略；
+// 语法不对返回 null（调用方按「没改」处理，绝不把余额清零）。不用 eval，逐词解析。
+function evalMoneyExpr(raw) {
+  if (typeof raw !== "string") return null;
+  let s = raw.replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
+    .replace(/＋/g, "+").replace(/－/g, "-").replace(/[×✕]/g, "*").replace(/÷/g, "/")
+    .replace(/[,，\s]/g, "");
+  s = s.replace(/[+\-*\/]+$/, "");
+  if (!s || !/^[0-9.+*\-\/]+$/.test(s)) return null;
+  const tokens = s.match(/\d+(?:\.\d+)?|[+*\-\/]/g);
+  if (!tokens || tokens.join("") !== s) return null;
+  let pos = 0;
+  let sign = 1;
+  if (tokens[0] === "-") { sign = -1; pos = 1; } else if (tokens[0] === "+") { pos = 1; }
+  const first = Number(tokens[pos]);
+  if (!isFinite(first)) return null;
+  const terms = [sign * first];
+  const addOps = [];
+  pos += 1;
+  while (pos < tokens.length) {
+    const op = tokens[pos];
+    const numTok = tokens[pos + 1];
+    if (numTok === undefined || !/^[+*\-\/]$/.test(op)) return null;
+    const num = Number(numTok);
+    if (!isFinite(num)) return null;
+    if (op === "*") terms[terms.length - 1] *= num;
+    else if (op === "/") { if (num === 0) return null; terms[terms.length - 1] /= num; }
+    else { addOps.push(op); terms.push(num); }
+    pos += 2;
+  }
+  let result = terms[0];
+  addOps.forEach((op, i) => { result = op === "+" ? result + terms[i + 1] : result - terms[i + 1]; });
+  if (!isFinite(result)) return null;
+  return Math.round(result * 100) / 100;
+}
+
 function startInlineEdit(target) {
   const path = target.dataset.path;
   const integer = target.dataset.integer === "true";
   const oldValue = getByPath(path);
   const input = document.createElement("input");
   input.className = "inline-number-input";
-  input.type = "number";
-  input.min = "0";
-  input.step = integer ? "1" : "0.01";
+  input.type = "text";
+  input.inputMode = integer ? "numeric" : "decimal";
   input.value = oldValue;
 
   target.textContent = "";
@@ -1854,7 +1890,16 @@ function startInlineEdit(target) {
   input.select();
 
   const commit = () => {
-    const nextValue = integer ? Math.max(1, Math.round(Number(input.value || 1))) : Number(input.value || 0);
+    const text = input.value.trim();
+    let nextValue;
+    if (text === "") {
+      nextValue = integer ? 1 : 0;
+    } else {
+      const evaluated = evalMoneyExpr(text);
+      const parsed = evaluated !== null ? evaluated : Number(text);
+      if (!isFinite(parsed)) { renderAll(); return; } // 看不懂的输入当没改，保住旧值
+      nextValue = integer ? Math.max(1, Math.round(parsed)) : Math.round(parsed * 100) / 100;
+    }
     if (Number(oldValue) === Number(nextValue)) {
       renderAll();
       return;
