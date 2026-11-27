@@ -1881,7 +1881,10 @@ function startInlineEdit(target) {
   const input = document.createElement("input");
   input.className = "inline-number-input";
   input.type = "text";
-  input.inputMode = integer ? "numeric" : "decimal";
+  // 金额框不设 inputmode：设 decimal 会被 iOS 强制成只有数字和点的系统小键盘，
+  // 连 + 号都没有（V1.08 教训，用户报障）。不设时用用户自己的输入法键盘，
+  // 其符号列里有 + − × ÷，配合 type=text 才能真正输入算式。整数框保留 numeric。
+  if (integer) input.inputMode = "numeric";
   input.value = oldValue;
 
   target.textContent = "";
