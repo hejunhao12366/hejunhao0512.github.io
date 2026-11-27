@@ -44,9 +44,9 @@
 
 ## 当前版本
 
-- **PWA 缓存**：`v108`
-- **HTML asset 版本**：`?v=108`（styles.css / app.js / drawing.js）
-- **最新 commit**：`081bf86` — 金额框支持算式直接计算（V1.08）
+- **PWA 缓存**：`v109`
+- **HTML asset 版本**：`?v=109`（styles.css / app.js / drawing.js）
+- **最新 commit**：`a766d30` — 金额框键盘修复（V1.09）
 - **版本号显示规范（2026-11-26 用户指定）**：内部计数仍是整数（105），对用户显示一律写成 `V主.次` —— 主 = 百位、次 = 后两位补零，如 104 → V1.04、105 → V1.05；设置页版本 tag 已按此格式输出，后续 changelog 与对用户汇报也用此格式。
 
 ## ⚠️ 修改规则（每次改动必须遵守）
@@ -151,6 +151,7 @@ pen（画笔）、rectangle、circle、line（直线）、arrow、text、select�
 
 | 日期 | Commit | 内容 |
 |------|--------|------|
+| 2026-11-27 | `a766d30` | **金额框键盘修复（V1.09）**：V1.08 给金额框设了 `inputmode=decimal`，iOS 据此强制弹出只有数字+点的系统小键盘，用户自己的输入法（带 + − × ÷ 符号列）被顶掉，加号反而更输不了——用户报障。改法：金额框不设 inputmode（整数框仍保留 numeric），键盘回到用户输入法，配合 type=text 与 evalMoneyExpr 才能真正输入并计算算式。教训：给输入框设 inputmode 前先想清楚它会把用户的输入法键盘换成什么。验证 8/8；线上确认 SW v109 |
 | 2026-11-27 | `081bf86` | **金额框算式计算（V1.08）**：用户报障余额框里打不了加号做加法（如银行卡两笔要先在外面加好）。根因：内联编辑器用 `<input type=number>`，iOS 上加号既难输入、`Number("51.49+30")` 又得 NaN。改法：编辑器换 `type=text` + `inputmode`（decimal/numeric）；新增纯函数 `evalMoneyExpr()` 逐词解析（不用 eval），支持 + − × ÷（含全角符号/数字）、先乘除后加减、开头负号、末尾多余运算符忽略、千分位逗号剔除，结果四舍五入到分；语法非法返回 null → commit 按「没改」处理保住旧值（不清空余额），空输入仍为 0。覆盖全部 `.editable-value`（四余额、白条/花呗、存钱目标、发薪日等整数框走取整）。验证 22/22；线上确认 SW v108 |
 | 2026-11-26 | `929397f` | **图标抓取准确性修复（V1.07）**：用户报障小草AI（shop.xiaocaoai.vip）显示「已获取」但图标是个灰色圆圈假图。实测确诊：该站官网 favicon 本身是空 SVG（data URI 空画布）、根目录 favicon.ico 与 apple-touch-icon 都是 SPA 的 HTML 兜底页——它根本没有真图标；假图来自 DDG ip3：无图标时它返回 404 却带一张 48×48 灰色占位 PNG，`<img>` 照常 onload，且 DDG 不发 CORS 头、前端读不到状态码，占位图无法与真图区分。修法：候选链改为准确性优先——站点自有 apple-touch-icon.png（min 16）→ 站点自有 favicon.ico（min 16，HTML 兜底解码失败自然 error）→ Google s2（min 17 挡 16px 地球图），**移除 DDG 源**。此后无图标站点会如实报「获取失败」。实测对照：小草三路全败→失败（正确），GitHub apple-touch-icon 200 image/png 一击命中。验证 13/13；线上确认 SW v107 |
 | 2026-11-26 | `771d232` | **网址导航获取网站图标（V1.06）**：用户要求导航图标能抓取所链接网站的真实图标、抓不到要提示失败。实现：link 新增可选 `icon` 字段（随 v104 的 linksData 整表克隆自动进云同步，无需改同步代码）；编辑弹窗加「网站图标」行（预览 + 获取按钮 + 清除按钮 + 状态提示行）。获取走 `fetchSiteIcon()` 按候选顺序用 Image 探测：DDG ip3 → 站点根 /favicon.ico → Google s2 sz=128（s2 对无图标站点返回 16px 通用地球图，故 min 尺寸 17 才算抓到；前两者加载失败即 error），单个 6s 超时，全败返回 null 并在弹窗提示「获取失败…已保留原来的表情/首字」。渲染时有 icon 用 `<img class=link-icon-img>`，加载 error 自动回退表情/首字。验证 18/18（候选生成含中文域名 punycode、非法 URL 等）；线上确认 SW v106 |
